@@ -3,7 +3,9 @@
 #include "TinyGPS++.h"
 //#include "heltec.h"
 #include<Arduino.h>
-
+#include <RH_RF95.h>
+#include <RHReliableDatagram.h>
+#define MTU 64
 
 //// BLE Code ////
 //BLE Source Code: https://github.com/espressif/arduino-esp32/blob/master/libraries/BLE/examples/BLE_client/BLE_client.ino
@@ -14,11 +16,48 @@ static BLEUUID    prxUUID("AAAA");
 static BLEUUID    ptxUUID("BBBB");
 static boolean doConnect = false;
 static boolean connected = false;
-static boolean doScan = false;
+//static boolean doScan = false;
 unsigned long scanTimer = 0;
 static BLERemoteCharacteristic* prxChar;
 static BLERemoteCharacteristic* ptxChar;
 static BLEAdvertisedDevice* myDevice;
+
+uint8_t prx_buffer[MTU];
+uint8_t ptx_buffer[MTU];
+int ptxLen = 0;
+
+//// System Variables ////
+
+union Data {
+  int i;
+  float f;
+  uint8_t bytes[4];
+};
+
+union Data initPressure, initDO, lat, lng, deg;
+
+int payloadID = 0;
+bool requestData = false; //new data requested
+bool newData = false;     //new data received
+bool sendData = true;    //data should forward over LoRa
+uint8_t lora_buffer[128];
+
+//for HELTEC LORA
+#define CLIENT_ADDRESS 11
+#define SERVER_ADDRESS 10
+
+#define RFM95_CS 18
+#define RFM95_RST 14
+#define RFM95_INT 26
+#define LED 25
+#define BATT_PIN 37
+#define RF95_FREQ 915.0
+
+// Singleton instance of the radio driver
+RH_RF95 driver(RFM95_CS, RFM95_INT);
+// Class to manage message delivery and receipt
+RHReliableDatagram manager(driver, CLIENT_ADDRESS);
+
 
 /**
  * Scan for BLE servers and find the first one that advertises the service we are looking for.
@@ -37,7 +76,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       BLEDevice::getScan()->stop();
       myDevice = new BLEAdvertisedDevice(advertisedDevice);
       doConnect = true;
-      doScan = true;
+//      doScan = true;
     }
   }
 };
@@ -71,7 +110,7 @@ bool connectToServer() {
     pClient->connect(myDevice);
     Serial.println("- Connected to Server");
     //this is set to 64 on the payload side
-    pClient->setMTU(64); //set client to request maximum MTU from server (default is 23 otherwise)
+    pClient->setMTU(MTU); //set client to request maximum MTU from server (default is 23 otherwise)
     // Obtain a reference to the service we are after in the remote BLE server.
     BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
     if (pRemoteService == nullptr) {
@@ -106,18 +145,16 @@ bool connectToServer() {
     }
     Serial.println(" - Found our characteristic");
 
-    connected = true;
     return true;
 }
  
 /*
- * Called when payload updates the RX characteristic
+ * Called when payload updates the PTX characteristic
  */
 static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic,
-  uint8_t* pData,
-  size_t length,
-  bool isNotify) {
+  uint8_t* pData, size_t length, bool isNotify) {
+    
     Serial.print("Notify callback for characteristic ");
     Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
     Serial.print(" of data length ");
@@ -125,6 +162,12 @@ static void notifyCallback(
     Serial.print("data: ");
     Serial.write(pData, length);
     Serial.println();
+    
+    newData = true;
+    ptxLen = length;
+    for (int i = 0; i < length; i++){
+      ptx_buffer[i] = *(pData + i);
+    }
 }
 
 //Use Serial 2 on ESP32 for GPS
@@ -148,9 +191,37 @@ void setup() {
   pBLEScan->setActiveScan(true);
   pBLEScan->start(5, false);
 
+  //request init data for payload
+  requestData = true;
+
   //// GPS ////
   Serial2.begin(9600, SERIAL_8N1, 16, 17);
 
+  //// LORA ////
+  pinMode(LED, OUTPUT);
+  pinMode(RFM95_RST, OUTPUT);
+  digitalWrite(RFM95_RST, HIGH);
+  delay(100);
+  
+  if (!manager.init())
+    Serial.println("init failed");
+
+  /*  MODEM CONFIG IMPORTANT!!!
+   *   
+   *  Bw125Cr45Sf128   -> Bw = 125 kHz, Cr = 4/5, Sf = 128chips/symbol, CRC on. Default medium range. 
+   *  Bw500Cr45Sf128   -> Bw = 500 kHz, Cr = 4/5, Sf = 128chips/symbol, CRC on. Fast+short range. 
+   *  Bw31_25Cr48Sf512 -> Bw = 31.25 kHz, Cr = 4/8, Sf = 512chips/symbol, CRC on. Slow+long range.
+   *  Bw125Cr48Sf4096  -> Bw = 125 kHz, Cr = 4/8, Sf = 4096chips/symbol, low data rate, CRC on. Slow+long range.
+   *  Bw125Cr45Sf2048  -> Bw = 125 kHz, Cr = 4/5, Sf = 2048chips/symbol, CRC on. Slow+long range.
+   *  
+   *  If data rate is slower, increase timeout below
+   */
+  manager.setTimeout(5000);
+//  driver.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+  driver.setSpreadingFactor(12);
+  driver.setSignalBandwidth(125000);
+  driver.setFrequency(RF95_FREQ);
+  driver.setTxPower(23, false);
 }
 
 void loop() {
@@ -159,15 +230,16 @@ void loop() {
   
   // doConnect is true then we have scanned for and found the desired Payload
   if (doConnect == true) {
+    doConnect = false;
     if (connectToServer()) {
+      connected = true;
       Serial.println("Connected to Payload");
     } else {
       Serial.println("Failed to connect to Payload");
     }
-    doConnect = false;
   }
   // attempt a rescan every 5 seconds
-  else if (doScan){
+  else if (!connected){
     if ((millis() - scanTimer) > 5000){
       scanTimer = millis();
       BLEDevice::getScan()->start(0);
@@ -182,10 +254,72 @@ void loop() {
   }
 
   if ((millis() - gpsTimer) > 5000){
+    gpsTimer = millis();
     displayGPSInfo();
+  }
+
+  //// DATA ////
+  if (newData) {
+    newData = false;
+    if (sendData){
+      Serial.println("sending data over LoRa ...");
+      sendLora();
+    }
+    else{
+      sendData = true;
+      if (ptxLen > 11){
+        for (int i = 2; i < 6; i ++)
+          initPressure.bytes[i] = ptx_buffer[i];
+        for (int i = 10; i < 12; i ++)
+          initDO.bytes[i] = ptx_buffer[i];
+      }
+    }
+  }
+
+  if (requestData) {
+    requestData = false;
+    sendData = false;
+    prxChar->writeValue(0x01, 1);
   }
 }
 
+/*
+ * Called to send LoRa Data Messages
+ */
+ void sendLora(){
+
+    lat.f = gps.location.lat();
+    lng.f = gps.location.lng();
+    deg.f = gps.course.deg();
+
+    int loraIdx = 0;
+    if (ptxLen > 0){
+      lora_buffer[loraIdx++] = ptx_buffer[0];
+      lora_buffer[loraIdx++] = ptx_buffer[1] + 20;
+      for (int i = 0; i < 4; i ++)
+        lora_buffer[loraIdx++] = lat.bytes[i];
+      for (int i = 0; i < 4; i ++)
+        lora_buffer[loraIdx++] = lng.bytes[i];
+      for (int i = 0; i < 4; i ++)
+        lora_buffer[loraIdx++] = deg.bytes[i];
+      for (int i = 0; i < 4; i ++)
+        lora_buffer[loraIdx++] = initPressure.bytes[i];
+      for (int i = 0; i < 2; i ++)
+        lora_buffer[loraIdx++] = initDO.bytes[i];
+    }
+
+    for (int i = 2; i < ptxLen; i ++){
+      lora_buffer[loraIdx++] = ptx_buffer[i];
+    }
+
+    Serial.print("LORA MESSAGE: ");
+    Serial.println(loraIdx);
+    Serial.write(lora_buffer, loraIdx);
+    if (manager.sendtoWait(lora_buffer, loraIdx, SERVER_ADDRESS))
+      Serial.println("LoRa Message Acknowledged");
+    else
+      Serial.println("LoRa Message Not Received");
+}
 /*
  * Display basic GPS info. Copied form TinyGps++ example.
  */
@@ -199,9 +333,14 @@ void displayGPSInfo()
     Serial.print(gps.location.lng(), 6);
   }
   else
-  {
     Serial.print(F("INVALID"));
-  }
+
+  Serial.print(F(" Course: ")); 
+  if (gps.course.isValid())
+    Serial.print(gps.course.deg());
+  else
+    Serial.print(F("INVALID"));
+
 
   Serial.print(F("  Date/Time: "));
   if (gps.date.isValid())
@@ -213,9 +352,7 @@ void displayGPSInfo()
     Serial.print(gps.date.year());
   }
   else
-  {
     Serial.print(F("INVALID"));
-  }
 
   Serial.print(F(" "));
   if (gps.time.isValid())
@@ -233,9 +370,7 @@ void displayGPSInfo()
     Serial.print(gps.time.centisecond());
   }
   else
-  {
     Serial.print(F("INVALID"));
-  }
 
   Serial.println();
 }

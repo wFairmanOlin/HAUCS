@@ -2,6 +2,7 @@
 #include <Adafruit_LPS2X.h>
 
 #define SENSOR_ID 1
+#define TEST 1
 #define MTU 64
 
 #define PTHRESH 10
@@ -22,7 +23,7 @@ uint8_t rx_buffer[MTU];
 uint8_t tx_buffer[MTU];
 
 bool getSample = false;
-bool sendSample = true;
+bool sendSample = false;
 
 union Data {
   int i;
@@ -34,6 +35,7 @@ union Data pressure, temperature, DO;
 float prev_pressure;
 unsigned long triggerTimer = 0;
 unsigned long sampleTimer = 0;
+unsigned long testTimer = 0;
 int numSamples = 0;
 int sampleLimit = MAX_SAMPLES;
 
@@ -100,6 +102,15 @@ void loop() {
     }
   }
 
+  //// TEST ////
+  if (TEST == 1){
+    if ( (millis() - testTimer) > 10000){
+      testTimer = millis();
+      Serial.println("Test Trigger");
+      getSample = true;
+      sampleLimit = MAX_SAMPLES;
+    }
+  }
   //// PRESSURE DETECTION ////
   if ( (millis() - triggerTimer) > TRIGGER_INTERVAL ){
     triggerTimer = millis();
@@ -115,13 +126,15 @@ void loop() {
     }
     else
       Serial.println(pressure.f - prev_pressure);
+
+    prev_pressure = pressure.f;
   }
 
   if (getSample) {
 
     if (numSamples >= sampleLimit){
       getSample = false;
-      sendSample = false;
+      sendSample = true;
       numSamples = 0;
     }
     else if ( (millis() - sampleTimer) > SAMPLE_INTERVAL){
@@ -142,7 +155,7 @@ void loop() {
     }
   }
 
-  if (!sendSample) {
+  if (sendSample) {
     if (connected) {
       Serial.print("sending ");
       int msgLen = sampleLimit * 10 + 2;
@@ -150,7 +163,7 @@ void loop() {
       tx_buffer[0] = SENSOR_ID;
       tx_buffer[1] = msgLen;
       ptxChar.writeValue(tx_buffer, msgLen);
-      sendSample = true;
+      sendSample = false;
     }
   }
 }
@@ -187,9 +200,9 @@ void rxReceived(BLEDevice central, BLECharacteristic characteristic) {
     prxChar.readValue(rx_buffer, rx_len);
   }
 
-  if (rx_buffer[0] == 1){
+  if (rx_buffer[0] > 0){
     getSample = true;
-    sampleLimit = rx_buffer[1];
+    sampleLimit = rx_buffer[0];
   }
 
   Serial.write(rx_buffer, rx_len);
