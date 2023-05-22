@@ -108,14 +108,14 @@ void loop()
         for (int i = 0; i < 2; i ++)
           initDO.bytes[i] = buf[bufIdx++];
 
-        Serial.print("from" );
+        Serial.print("from " );
         Serial.print(from);
         Serial.print(" lat " );
-        Serial.print(lat.f);
+        Serial.print(lat.f, 6);
         Serial.print(" lng " );
-        Serial.print(lng.f);
+        Serial.print(lng.f, 6);
         Serial.print(" deg " );
-        Serial.print(deg.f);
+        Serial.print(deg.f, 6);
         Serial.print(" initP " );
         Serial.print(initPressure.f);
         Serial.print(" initDO " );

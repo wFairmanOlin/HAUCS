@@ -155,19 +155,18 @@ static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic,
   uint8_t* pData, size_t length, bool isNotify) {
     
-    Serial.print("Notify callback for characteristic ");
-    Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
-    Serial.print(" of data length ");
+    Serial.print("PTX char updated with message length ");
     Serial.println(length);
-    Serial.print("data: ");
-    Serial.write(pData, length);
-    Serial.println();
+//    Serial.print("data: ");
     
     newData = true;
     ptxLen = length;
     for (int i = 0; i < length; i++){
       ptx_buffer[i] = *(pData + i);
+      Serial.print(*(pData + i), HEX);
+      Serial.print(" ");
     }
+    Serial.println();
 }
 
 //Use Serial 2 on ESP32 for GPS
@@ -193,6 +192,8 @@ void setup() {
 
   //request init data for payload
   requestData = true;
+  initPressure.f = 0;
+  initDO.f = 0;
 
   //// GPS ////
   Serial2.begin(9600, SERIAL_8N1, 16, 17);
@@ -268,18 +269,25 @@ void loop() {
     else{
       sendData = true;
       if (ptxLen > 11){
-        for (int i = 2; i < 6; i ++)
-          initPressure.bytes[i] = ptx_buffer[i];
-        for (int i = 10; i < 12; i ++)
-          initDO.bytes[i] = ptx_buffer[i];
+        Serial.println("updating initial pressure & DO");
+        for (int i = 0; i < 4; i ++) {
+          initPressure.bytes[i] = ptx_buffer[i + 2];
+        }
+        for (int i = 0; i < 2; i ++)
+          initDO.bytes[i] = ptx_buffer[i + 10];
+      Serial.print("init Pressure: "); Serial.println(initPressure.f);
+      Serial.print("      init DO: "); Serial.println(initDO.f);
       }
     }
   }
 
   if (requestData) {
-    requestData = false;
-    sendData = false;
-    prxChar->writeValue(0x01, 1);
+    if (connected){
+      requestData = false;
+      sendData = false;
+      prxChar->writeValue(0x01, 1);
+      Serial.println("data requested from payload");
+    }
   }
 }
 
@@ -312,9 +320,12 @@ void loop() {
       lora_buffer[loraIdx++] = ptx_buffer[i];
     }
 
-    Serial.print("LORA MESSAGE: ");
-    Serial.println(loraIdx);
-    Serial.write(lora_buffer, loraIdx);
+    Serial.print("LoRa Message: ");
+    for (int i = 0; i < loraIdx; i++){
+      Serial.print(lora_buffer[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
     if (manager.sendtoWait(lora_buffer, loraIdx, SERVER_ADDRESS))
       Serial.println("LoRa Message Acknowledged");
     else

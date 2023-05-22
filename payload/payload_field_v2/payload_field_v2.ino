@@ -1,8 +1,8 @@
 #include <ArduinoBLE.h>
 #include <Adafruit_LPS2X.h>
 
-#define SENSOR_ID 1
-#define TEST 1
+#define SENSOR_ID 2
+#define TEST 0
 #define MTU 64
 
 #define PTHRESH 10
