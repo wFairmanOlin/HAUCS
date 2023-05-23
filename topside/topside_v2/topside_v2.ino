@@ -41,6 +41,7 @@ bool requestData = false; //new data requested
 bool newData = false;     //new data received
 bool sendData = true;    //data should forward over LoRa
 uint8_t lora_buffer[128];
+unsigned long blinkTimer = 0;
 
 //for HELTEC LORA
 #define CLIENT_ADDRESS 11
@@ -176,6 +177,7 @@ unsigned long gpsTimer = 0;
 void setup() {
   Serial.begin(115200);
   delay(2000);
+  digitalWrite(LED, HIGH);
   Serial.println("Topside is alive");
 
   //// BLE ////
@@ -241,9 +243,16 @@ void loop() {
   }
   // attempt a rescan every 5 seconds
   else if (!connected){
+    digitalWrite(LED, HIGH);
     if ((millis() - scanTimer) > 5000){
       scanTimer = millis();
       BLEDevice::getScan()->start(0);
+    }
+  }
+  //turn off LED when connected
+  else {
+    if (digitalRead(LED)){
+      digitalWrite(LED, LOW);
     }
   }
 
@@ -289,6 +298,15 @@ void loop() {
       Serial.println("data requested from payload");
     }
   }
+
+  //Send Data on button press
+  if (digitalRead(0) == 0){
+    if (connected){
+      Serial.println("Requesting Data");
+      prxChar->writeValue(0x03, 1);
+      delay(500);
+    }
+  }
 }
 
 /*
@@ -326,8 +344,13 @@ void loop() {
       Serial.print(" ");
     }
     Serial.println();
-    if (manager.sendtoWait(lora_buffer, loraIdx, SERVER_ADDRESS))
+    if (manager.sendtoWait(lora_buffer, loraIdx, SERVER_ADDRESS)){
       Serial.println("LoRa Message Acknowledged");
+      for (int i = 0; i < 50; i++){
+        digitalWrite(LED, !digitalRead(LED));
+        delay(100);
+      }
+    }
     else
       Serial.println("LoRa Message Not Received");
 }
