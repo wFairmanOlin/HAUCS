@@ -121,7 +121,7 @@ void loop()
         Serial.print(" initDO " );
         Serial.print(initDO.i);
                     
-        while ((bufIdx + 10) < len){
+        while ((bufIdx + 9) < len){
           union Data tempPressure, tempDO, tempTemperature;
 
           for (int i = 0; i < 4; i++)

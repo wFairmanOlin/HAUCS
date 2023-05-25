@@ -1,14 +1,14 @@
 #include <ArduinoBLE.h>
 #include <Adafruit_LPS2X.h>
 
-#define SENSOR_ID 2
+#define SENSOR_ID 1
 #define TEST 0
 #define MTU 64
 
-#define PTHRESH 10
+#define PTHRESH 5
 #define TRIGGER_INTERVAL 2000
-#define SAMPLE_INTERVAL 2000
-#define MAX_SAMPLES 3
+#define SAMPLE_INTERVAL 1000
+#define MAX_SAMPLES 6
 
 Adafruit_LPS28 lps;
 Adafruit_Sensor *lps_temp, *lps_pressure;
@@ -43,6 +43,8 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
   Serial.println("payload is alive");
+  digitalWrite(LEDB, LOW);
+  
 
   //// LPS298 ////
   if (!lps.begin_I2C()) {

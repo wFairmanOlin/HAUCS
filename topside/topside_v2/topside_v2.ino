@@ -24,6 +24,9 @@ static BLEAdvertisedDevice* myDevice;
 
 uint8_t prx_buffer[MTU];
 uint8_t ptx_buffer[MTU];
+//uint8_t prev_ptx_buffer[MTU];
+
+
 int ptxLen = 0;
 
 //// System Variables ////
@@ -87,10 +90,13 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
  */
 class MyClientCallback : public BLEClientCallbacks {
   void onConnect(BLEClient* pclient) {
+    digitalWrite(LED, LOW);
   }
 
   void onDisconnect(BLEClient* pclient) {
     connected = false;
+    //turn on led on disconnect
+    digitalWrite(LED, HIGH);
     Serial.println("Payload disconnected");
   }
 };
@@ -159,15 +165,14 @@ static void notifyCallback(
     Serial.print("PTX char updated with message length ");
     Serial.println(length);
 //    Serial.print("data: ");
-    
-    newData = true;
     ptxLen = length;
     for (int i = 0; i < length; i++){
       ptx_buffer[i] = *(pData + i);
-      Serial.print(*(pData + i), HEX);
-      Serial.print(" ");
+//      Serial.print(*(pData + i), HEX);
+//      Serial.print(" ");
     }
-    Serial.println();
+//    Serial.println();
+    newData = true;
 }
 
 //Use Serial 2 on ESP32 for GPS
@@ -233,26 +238,44 @@ void loop() {
   
   // doConnect is true then we have scanned for and found the desired Payload
   if (doConnect == true) {
-    doConnect = false;
+//    doConnect = false;
     if (connectToServer()) {
+      doConnect = false;
       connected = true;
       Serial.println("Connected to Payload");
-    } else {
+      //ignore if we are already asking for data
+      if (!requestData){
+        //check if characterisitic has been updated when disconnected
+        bool dataUpdated = false;
+        std::string value = ptxChar->readValue();
+        ptxLen = value.length();
+        for (int i = 0; i < ptxLen; i++){
+          if (ptx_buffer[i] != value[i])
+            dataUpdated = true;
+          ptx_buffer[i] = value[i];
+        }
+        if (dataUpdated){
+          Serial.println("Found Data after Disconnect!");
+          sendLora();
+        }
+        else
+          Serial.println("Data is the same!");
+      }//!requestData
+    } //connectToServer 
+    else
       Serial.println("Failed to connect to Payload");
-    }
   }
   // attempt a rescan every 5 seconds
   else if (!connected){
-    digitalWrite(LED, HIGH);
+    
     if ((millis() - scanTimer) > 5000){
       scanTimer = millis();
-      BLEDevice::getScan()->start(0);
-    }
-  }
-  //turn off LED when connected
-  else {
-    if (digitalRead(LED)){
-      digitalWrite(LED, LOW);
+      BLEScan* pBLEScan = BLEDevice::getScan();
+      pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+      pBLEScan->setInterval(1349);
+      pBLEScan->setWindow(449);
+      pBLEScan->setActiveScan(true);
+      pBLEScan->start(1, false);
     }
   }
 
@@ -354,6 +377,7 @@ void loop() {
     else
       Serial.println("LoRa Message Not Received");
 }
+ 
 /*
  * Display basic GPS info. Copied form TinyGps++ example.
  */
@@ -375,7 +399,16 @@ void displayGPSInfo()
   else
     Serial.print(F("INVALID"));
 
+  Serial.print(F(" Speed: ")); 
+  if (gps.speed.isValid())
+    Serial.print(gps.speed.mph());
+  else
+    Serial.print(F("INVALID"));
 
+  Serial.print(F(" NSATS: ")); 
+  
+  Serial.print(gps.satellites.value());
+    
   Serial.print(F("  Date/Time: "));
   if (gps.date.isValid())
   {
