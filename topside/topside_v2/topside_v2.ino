@@ -308,7 +308,7 @@ void loop() {
         for (int i = 0; i < 2; i ++)
           initDO.bytes[i] = ptx_buffer[i + 10];
       Serial.print("init Pressure: "); Serial.println(initPressure.f);
-      Serial.print("      init DO: "); Serial.println(initDO.f);
+      Serial.print("      init DO: "); Serial.println(initDO.i);
       }
     }
   }
@@ -361,11 +361,33 @@ void loop() {
       lora_buffer[loraIdx++] = ptx_buffer[i];
     }
 
-    Serial.print("LoRa Message: ");
-    for (int i = 0; i < loraIdx; i++){
-      Serial.print(lora_buffer[i], HEX);
-      Serial.print(" ");
+    //Print Message eligibly
+    Serial.println("LoRa Message");
+    Serial.print("init pressure: "); Serial.println(initPressure.f);
+    Serial.print("      init DO: "); Serial.println(initDO.i);
+  
+    int idx = 2;
+    while (idx < ptxLen){
+      union Data tempP, tempDO, tempT;
+      tempDO.i = 0;
+      for (int i = 0; i < 4; i++)
+        tempP.bytes[i] = ptx_buffer[idx++];
+      for (int i = 0; i < 4; i++)
+        tempT.bytes[i] = ptx_buffer[idx++];
+      for (int i = 0; i < 2; i++)
+        tempDO.bytes[i] = ptx_buffer[idx++];
+
+     Serial.print("     pressure: "); Serial.println(tempP.f);
+     Serial.print("  temperature: "); Serial.println(tempT.f);
+     Serial.print("           DO: "); Serial.println(tempDO.i);
     }
+    
+//    Serial.print("LoRa Message: ");
+//    for (int i = 0; i < loraIdx; i++){
+//      Serial.print(lora_buffer[i], HEX);
+//      Serial.print(" ");
+//    }
+    
     Serial.println();
     if (manager.sendtoWait(lora_buffer, loraIdx, SERVER_ADDRESS)){
       Serial.println("LoRa Message Acknowledged");

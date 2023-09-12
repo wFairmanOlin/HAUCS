@@ -1,14 +1,13 @@
 #include <ArduinoBLE.h>
 #include <Adafruit_LPS2X.h>
 
-#define SENSOR_ID 1
-#define TEST 0
+#define SENSOR_ID 3
 #define MTU 64
 
 #define PTHRESH 5
 #define TRIGGER_INTERVAL 2000
-#define SAMPLE_INTERVAL 1000
-#define MAX_SAMPLES 6
+#define SAMPLE_INTERVAL 10000
+#define MAX_SAMPLES 3
 
 Adafruit_LPS28 lps;
 Adafruit_Sensor *lps_temp, *lps_pressure;
@@ -24,6 +23,7 @@ uint8_t tx_buffer[MTU];
 
 bool getSample = false;
 bool sendSample = false;
+bool underwater = true;
 
 union Data {
   int i;
@@ -35,7 +35,6 @@ union Data pressure, temperature, DO;
 float prev_pressure;
 unsigned long triggerTimer = 0;
 unsigned long sampleTimer = 0;
-unsigned long testTimer = 0;
 int numSamples = 0;
 int sampleLimit = MAX_SAMPLES;
 
@@ -103,42 +102,46 @@ void loop() {
       Serial.println("Disconnected from central");
     }
   }
-
-  //// TEST ////
-  if (TEST == 1){
-    if ( (millis() - testTimer) > 10000){
-      testTimer = millis();
-      Serial.println("Test Trigger");
-      getSample = true;
-      sampleLimit = MAX_SAMPLES;
-    }
-  }
+    
   //// PRESSURE DETECTION ////
   if ( (millis() - triggerTimer) > TRIGGER_INTERVAL ){
     triggerTimer = millis();
     Serial.print("new sample - ");
     pollSensors();
-    
+
+    //// detect if underwater ////
     if ( (pressure.f - prev_pressure) > PTHRESH){
       Serial.println("tripped pressure threshold");
       if (!getSample) {
+        underwater = true;
         getSample = true;
+        sampleTimer = millis();
         sampleLimit = MAX_SAMPLES;
       }
     }
+    //// detect if out of water
+    else if ( (prev_pressure - pressure.f) > PTHRESH){
+      if (underwater){
+        Serial.println("detected out of water");
+        underwater = false;
+      }
+    }
     else
-      Serial.println(pressure.f - prev_pressure);
+      Serial.println(pressure.f - prev_pressure); 
 
     prev_pressure = pressure.f;
   }
 
   if (getSample) {
 
-    if (numSamples >= sampleLimit){
+    // stop sampling if reached limit or out of water
+    if ((numSamples >= sampleLimit) || !underwater){
       getSample = false;
-      sendSample = true;
-      numSamples = 0;
+      // only send if data is collected
+      if (numSamples > 0)
+        sendSample = true;
     }
+    // take a sample at every timed interval
     else if ( (millis() - sampleTimer) > SAMPLE_INTERVAL){
       Serial.println("sampling ...");
       sampleTimer = millis();
@@ -160,19 +163,19 @@ void loop() {
   if (sendSample) {
     if (connected) {
       Serial.print("sending ");
-      int msgLen = sampleLimit * 10 + 2;
+      int msgLen = numSamples * 10 + 2;
       Serial.println(msgLen);
       tx_buffer[0] = SENSOR_ID;
       tx_buffer[1] = msgLen;
       ptxChar.writeValue(tx_buffer, msgLen);
       sendSample = false;
+      numSamples = 0;
     }
   }
 }
 
 
 void pollSensors(){
-
   lps_temp = lps.getTemperatureSensor();
   lps_pressure = lps.getPressureSensor();
   sensors_event_t psr;
@@ -184,11 +187,12 @@ void pollSensors(){
   
   int temp_DO = 0;
   for (int i = 0; i < 10; i ++){
+    delay(100);
     temp_DO += analogRead(A0);
   }
   
   DO.i = temp_DO / 10;
-  
+  Serial.print("do "); Serial.println(DO.i);
 }
 /*
  * Called when data is written to the prx characteristic
@@ -204,6 +208,7 @@ void rxReceived(BLEDevice central, BLECharacteristic characteristic) {
 
   if (rx_buffer[0] > 0){
     getSample = true;
+    underwater = true;
     sampleLimit = rx_buffer[0];
   }
 
