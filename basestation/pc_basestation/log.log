@@ -1,0 +1,187 @@
+2023-09-14 15:22:44,961 INFO: Starting with IP: 
+2023-09-14 15:22:44,962 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM0'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+2023-09-14 15:22:44,963 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM1'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM1: [Errno 2] No such file or directory: '/dev/ttyACM1'
+2023-09-14 15:22:44,963 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM2'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM2: [Errno 2] No such file or directory: '/dev/ttyACM2'
+2023-09-14 15:22:44,963 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM3'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM3: [Errno 2] No such file or directory: '/dev/ttyACM3'
+2023-09-14 15:22:44,963 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM4'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM4: [Errno 2] No such file or directory: '/dev/ttyACM4'
+2023-09-14 15:22:44,964 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM5'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM5: [Errno 2] No such file or directory: '/dev/ttyACM5'
+2023-09-14 15:22:44,964 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM6'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM6: [Errno 2] No such file or directory: '/dev/ttyACM6'
+2023-09-14 15:22:44,964 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM7'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM7: [Errno 2] No such file or directory: '/dev/ttyACM7'
+2023-09-14 15:22:44,964 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM8'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM8: [Errno 2] No such file or directory: '/dev/ttyACM8'
+2023-09-14 15:22:44,964 ERROR: serial init failed
+Traceback (most recent call last):
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyACM9'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 42, in init_serial
+    ser = serial.Serial(port=port, baudrate=115200,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/Users/wfairman/opt/anaconda3/envs/lab2/lib/python3.11/site-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyACM9: [Errno 2] No such file or directory: '/dev/ttyACM9'
+2023-09-14 15:22:45,034 ERROR: reading serial buffer failed
+Traceback (most recent call last):
+  File "/Users/wfairman/Desktop/FAU_Research/HAUCS_CODE/basestation/pc_basestation/gateway.py", line 143, in <module>
+    c = ser.read()
+        ^^^
+NameError: name 'ser' is not defined

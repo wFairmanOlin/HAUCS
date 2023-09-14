@@ -38,17 +38,15 @@ def init_serial(port):
     """
     global ser
 
-    try: 
-        ser = serial.Serial(port=port, baudrate=115200,
-                            parity=serial.PARITY_NONE,
-                            stopbits=serial.STOPBITS_ONE,
-                            bytesize=serial.EIGHTBITS,
-                                timeout=0)
-    except:
-        logger.exception("serial init failed")
-        raise
+
+    ser = serial.Serial(port=port, baudrate=9600,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        bytesize=serial.EIGHTBITS,
+                            timeout=0)
 
     return ser
+
 
 def restart_firebase(app):
     logging.info('Attempting to restart Firebase Connection')
@@ -100,8 +98,7 @@ logger.info('Starting with IP: ' + get_IP())
 # port = '/dev/cu.usbserial-0001'
 port = '/dev/ttyACM'
 portnum = 0
-# port = '/dev/ttyUSB0' #for RPI
-for i in range(10):
+for i in range(20):
     try:
         print(port + str(i))
         ser = init_serial(port + str(i))
