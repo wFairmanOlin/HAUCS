@@ -87,8 +87,23 @@ void loop()
       //print stats
       digitalWrite(LED, HIGH);
 
+      //handle gps messages
+      if (buf[0] == 3){
+        if(len == 9){
+          int idx = 1;
+          union Data lat, lng;
+          for (int i = 0; i < 4; i++)
+            lat.bytes[i] = buf[idx++];
+          for(int i = 0; i < 4; i++)
+            lng.bytes[i] = buf[idx++];
+          Serial.print("from ");  
+          Serial.print(" lat "); Serial.print(lat.f, 6);
+          Serial.print(" lng "); Serial.print(lng.f, 6);
+          Serial.print(" RSSI "); Serial.print(driver.lastRssi(), DEC);
+        }
+      }
       //handle payload messages
-      if ((len != buf[1]) && (len < 20))
+      else if ((len != buf[1]) && (len < 20))
         Serial.println("Incomplete Message Received");
       else{
         int bufIdx = 0;

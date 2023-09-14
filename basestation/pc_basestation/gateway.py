@@ -27,8 +27,8 @@ import pandas as pd
 # log in the local "log.log" file.
 #
 # Let the computer establish a network connection on reboot
-# folder = "Desktop/Biomass/pc_basestation/"
-folder = "" #for testing
+folder = "Desktop/HAUCS/basestation/pc_basestation/"
+# folder = "" #for testing
 #############################################
 
 
@@ -62,7 +62,7 @@ def get_IP():
     return terminalResponse.stdout
 
 def get_pond_id(lat, lng):
-    df = pd.read_csv('sampling_points.csv')
+    df = pd.read_csv(folder + 'sampling_points.csv')
     pond_ids = df.pop('pond')
     pond_gps = df.to_numpy()
 
@@ -102,6 +102,7 @@ for i in range(20):
     try:
         print(port + str(i))
         ser = init_serial(port + str(i))
+        break
     except:
         continue
 portnum = i
@@ -161,7 +162,7 @@ while True:
                 if message_id.isnumeric():
                     sensor_id = message_id
                 
-                    if len(message) == 9:
+                    if ((len(message) - 18) % 6) == 0:
                         data = {"lat" : message[3], "lng" : message[5], "heading" : message[7],
                                  "init_pressure" : message[9], "init_do" : message[11]}
                         
