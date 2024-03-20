@@ -43,6 +43,9 @@ local function send_DO_data()
         end
     end
 
+    -- scale do value to voltage
+    do_val = do_val * 330 / 1024 / 11
+
     gcs:send_named_float('p_DO', do_val)
 
 end
@@ -87,7 +90,7 @@ local function send_LPS_data()
 
         -- calculate pressure
         pres = 0
-        pres = (bytes[3] << 8) | (bytes[2] << 8) | bytes[1]
+        pres = (bytes[3] << 16) | (bytes[2] << 8) | bytes[1]
         if ((pres & 0x800000) == 0x800000) then
             pres = pres - 0xFFFFFF
         end
