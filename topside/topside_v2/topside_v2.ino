@@ -307,10 +307,16 @@ void loop() {
         }
         for (int i = 0; i < 2; i ++)
           initDO.bytes[i] = ptx_buffer[i + 10];
-      Serial.print("init Pressure: "); Serial.println(initPressure.f);
-      Serial.print("      init DO: "); Serial.println(initDO.i);
+          
+        Serial.print("init Pressure: "); Serial.println(initPressure.f);
+        Serial.print("      init DO: "); Serial.println(initDO.i);
+        //// redo request if init pressure or DO is 0 ////
+        if ((initDO.i == 0) || (initPressure.f == 0)){
+          Serial.println("initial pressure and DO incorrect, trying again ...");
+          requestData = true;
+        }
       }
-    }
+    } 
   }
 
   if (requestData) {

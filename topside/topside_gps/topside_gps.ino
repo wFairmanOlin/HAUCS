@@ -117,7 +117,7 @@ void loop() {
 
     int loraIdx = 0;
     
-    lora_buffer[loraIdx++] = 3;
+    lora_buffer[loraIdx++] = 44;
     for (int i = 0; i < 4; i ++)
       lora_buffer[loraIdx++] = lat.bytes[i];
     for (int i = 0; i < 4; i ++)
