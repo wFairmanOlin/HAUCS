@@ -44,7 +44,7 @@ local function send_DO_data()
     end
 
     -- scale do value to voltage
-    do_val = do_val * 330 / 1024 / 11
+    do_val = do_val * 3300 / 1024 / 11
 
     gcs:send_named_float('p_DO', do_val)
 

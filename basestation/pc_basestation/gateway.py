@@ -70,7 +70,7 @@ def get_pond_id(lat, lng):
     point_y = np.tile(point, (pond_gps.shape[0], 1))
     #calculate euclidean distances
     distances = np.linalg.norm(pond_gps - point_y, axis=1)
-    #calcualte minimum distance in meters
+    #calculate minimum distance in meters
     min_dist = distances.min() * 111_000
     #determine if min distance is acceptable
     if (min_dist < 100):
@@ -116,11 +116,6 @@ ref = db.reference('/LH_Farm')
 ############### GLOBAL VARIABLES ###############
 buf = b'' #serial input buffer
 
-golay = dict()    #dictionary holding latest golay message
-golay_timeout = 5 #max time (secs) to receive complete golay message
-prev_id = -1      #id of last sensor to send a golay message
-prev_time = 0     #time that previous golay message was received
-
 last_message_received = time.time() #time that latest general message was received
 
 ## FOR fdata ##
@@ -156,7 +151,7 @@ while True:
 
             if len(message) >= 1:
                 message_id = message[1]
-                message_time = time.strftime('%Y%m%d_%H:%M:%S', time.localtime(time.time()))
+                message_time = time.strftime('%Y%m%d_%H:%M:%S', time.gmtime(time.time()))
 
                 # DO Message
                 if message_id.isnumeric():
@@ -166,20 +161,22 @@ while True:
                         data = {"lat" : message[3], "lng" : message[5], "heading" : message[7],
                                  "init_pressure" : message[9], "init_do" : message[11]}
                         
-                        data["pressure"] = message[13::6]
-                        data["temp"] = message[15::6]
-                        data["do"] = message[17::6]
-                        
+                        pressure = message[13::6]
+                        temperature = message[15::6]
+                        do = message[17::6]
+                        data["pressure"] = [float(i) for i in pressure]
+                        data["temp"] = [float(i) for i in temperature]
+                        data['do'] = [int(i) for i in do]
                         pond_id = get_pond_id(message[3], message[5])
                         data["pid"] = pond_id
                         data["sid"] = message[1]
+                        data["type"] = "truck"
 
                         #update recent
                         try:
-                            ref_recent = db.reference('/LH_Farm/recent')
-                            recent_data = ref_recent.order_by_key().limit_to_last(9).get()
+                            recent_data = db.reference('/LH_Farm/recent').order_by_key().limit_to_last(9).get()
                             recent_data[message_time] = data
-                            ref_recent.set(recent_data)
+                            db.reference('/LH_Farm/recent').set(recent_data)
                         except:
                             logger.warning("uploading DO message to recent failed")
                             app, ref = restart_firebase(app)
