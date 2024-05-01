@@ -66,7 +66,7 @@ def get_pond_id(lat, lng):
     pond_ids = df.pop('pond')
     pond_gps = df.to_numpy()
 
-    point = np.array([float(lat), float(lng)])
+    point = np.array([float(lng), float(lat)])
     point_y = np.tile(point, (pond_gps.shape[0], 1))
     #calculate euclidean distances
     distances = np.linalg.norm(pond_gps - point_y, axis=1)
@@ -75,7 +75,7 @@ def get_pond_id(lat, lng):
     #determine if min distance is acceptable
     if (min_dist < 100):
         #find pond associated with minimum distance
-        pond_id = pond_ids[np.argmin(distances)]
+        pond_id = str(pond_ids[np.argmin(distances)])
     else:
         pond_id = "unknown"
 
@@ -190,7 +190,7 @@ while True:
                             app, ref = restart_firebase(app)
                         
                         #update overview
-                        overview_do = get_do(data['pressure'], data['do'])
+                        overview_do = int(100 * float(get_do(data['pressure'], data['do']))/float(data['init_do']))
 
                         try:
                             overview_ref = ref.child("overview/pond_" + pond_id)
@@ -207,8 +207,8 @@ while True:
 
                 # GPS Position Message
                 if message_id == "lat":
-                    if len(message) == 8:
-                        data = {message[2] : message[3], message[4] : message[5], message[6] : message[7]}
+                    if len(message) == 7:
+                        data = {message[1] : message[2], message[3] : message[4], message[5] : message[6]}
                         try:
                             sensor_ref = ref.child("gps")
                             sensor_ref.child(message_time).set(data)
