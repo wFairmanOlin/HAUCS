@@ -88,7 +88,7 @@ void loop()
       digitalWrite(LED, HIGH);
 
       //handle gps messages
-      if (buf[0] == 3){
+      if (buf[0] == 44){
         if(len == 9){
           int idx = 1;
           union Data lat, lng;
@@ -99,7 +99,7 @@ void loop()
           Serial.print("from ");  
           Serial.print(" lat "); Serial.print(lat.f, 6);
           Serial.print(" lng "); Serial.print(lng.f, 6);
-          Serial.print(" RSSI "); Serial.print(driver.lastRssi(), DEC);
+          Serial.print(" RSSI "); Serial.println(driver.lastRssi(), DEC);
         }
       }
       //handle payload messages
@@ -117,8 +117,6 @@ void loop()
         for (int i = 0; i < 4; i ++)
           lng.bytes[i] = buf[bufIdx++];
         for (int i = 0; i < 4; i ++)
-          deg.bytes[i] = buf[bufIdx++];
-        for (int i = 0; i < 4; i ++)
           initPressure.bytes[i] = buf[bufIdx++];
         for (int i = 0; i < 2; i ++)
           initDO.bytes[i] = buf[bufIdx++];
@@ -130,7 +128,7 @@ void loop()
         Serial.print(" lng " );
         Serial.print(lng.f, 6);
         Serial.print(" deg " );
-        Serial.print(deg.f, 6);
+        Serial.print(0);
         Serial.print(" initP " );
         Serial.print(initPressure.f);
         Serial.print(" initDO " );
