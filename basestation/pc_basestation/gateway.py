@@ -64,7 +64,7 @@ def get_IP():
     return terminalResponse.stdout
 
 def get_pond_table():
-    with open("ponds.json") as file:
+    with open(folder + "ponds.json") as file:
         data = json.load(file)
 
     ponds = {}
