@@ -10,6 +10,8 @@ from firebase_admin import db
 from datetime import datetime
 import numpy as np
 import pandas as pd
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 
 
 ############### Running On Startup ###############
@@ -60,6 +62,18 @@ def restart_firebase(app):
 def get_IP():
     terminalResponse = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
     return terminalResponse.stdout
+
+def get_pond_table():
+    with open("ponds.json") as file:
+        data = json.load(file)
+
+    ponds = {}
+    for i in data['features']:
+        id = i['properties']['number']
+        coords = i['geometry']['coordinates'][0]
+        ponds[id] = Polygon(coords)
+    
+    return ponds
 
 def get_pond_id(lat, lng):
     df = pd.read_csv(folder + 'sampling_points.csv')
@@ -121,6 +135,10 @@ last_message_received = time.time() #time that latest general message was receiv
 ## FOR fdata ##
 fdata_data = dict()
 fdata_timers = dict()
+
+#startup
+pond_table = get_pond_table()
+
 ############### MAIN LOOP ###############
 #message: from 3 lat 27.535619 lng -80.351821 deg 0.000000 initP 1016.50 initDO 0 p 1015.75 t 28.16 do 0
 while True:
@@ -153,8 +171,51 @@ while True:
                 message_id = message[1]
                 message_time = time.strftime('%Y%m%d_%H:%M:%S', time.gmtime(time.time()))
 
+                #Bathymetry
+                if message_id == '4':
+                    sensor_id = message_id
+
+                    if ((len(message) - 18) % 6) == 0:
+                            data = {"lat" : message[3], "lng" : message[5], "heading" : message[7],
+                                    "init_pressure" : message[9], "init_do" : message[11]}
+                        
+                    pond_id = "unknown"
+                    for i in pond_table:
+                        if pond_table[i].contains(Point([data['lng'], data['lat']])):
+                            pond_id = str(i)
+                            break
+
+                    pressure = message[13::6]
+                    temperature = message[15::6]
+                    do = message[17::6]
+                    data["pressure"] = [float(i) for i in pressure]
+                    data["temp"] = [float(i) for i in temperature]
+                    data['do'] = [int(i) for i in do]
+                    data["pid"] = pond_id
+                    data["sid"] = message[1]
+                    data["type"] = "bathy"
+
+                    #update recent
+                    try:
+                        recent_data = db.reference('/LH_Farm/recent').order_by_key().limit_to_last(9).get()
+                        recent_data[message_time] = data
+                        db.reference('/LH_Farm/recent').set(recent_data)
+                    except:
+                        logger.warning("uploading DO message to recent failed")
+                        app, ref = restart_firebase(app)
+
+                    #update bathy
+                    try:
+                        pond_ref = ref.child("bathymetry")
+                        pond_ref.child(message_time).set(data)
+                    except:
+                        logger.warning("uploading BATHY message failed")
+                        app, ref = restart_firebase(app)
+
+                    
+
                 # DO Message
-                if message_id.isnumeric():
+                elif message_id.isnumeric():
                     sensor_id = message_id
                 
                     if ((len(message) - 18) % 6) == 0:

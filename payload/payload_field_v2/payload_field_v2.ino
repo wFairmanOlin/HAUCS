@@ -4,10 +4,11 @@
 #define SENSOR_ID 3
 #define MTU 64
 
-#define PTHRESH 5
-#define TRIGGER_INTERVAL 2000
+#define PTHRESH 10
+#define P_BUF_SIZE 30
+#define TRIGGER_INTERVAL 1000
 #define SAMPLE_INTERVAL 10000
-#define MAX_SAMPLES 3
+#define MAX_SAMPLES 6
 
 Adafruit_LPS28 lps;
 Adafruit_Sensor *lps_temp, *lps_pressure;
@@ -31,8 +32,10 @@ union Data {
   uint8_t bytes[4];
 };
 
+float p_buf[P_BUF_SIZE];
 union Data pressure, temperature, DO;
-float prev_pressure;
+float *p_buf_start = p_buf;
+float avg_amb_p = 0;
 unsigned long triggerTimer = 0;
 unsigned long sampleTimer = 0;
 int numSamples = 0;
@@ -75,13 +78,16 @@ void setup() {
   BLE.advertise();
   Serial.println("BLE Advertising!");
 
-  // set initial values
-  pollSensors();
-  prev_pressure = pressure.f;
+  for (int i = 0; i < P_BUF_SIZE; i++){
+    pollSensors();
+    p_buf[i] = pressure.f;
+    delay(50);
+  }
+  
 }
 
 void loop() {
-
+  
   //// BLE ////
   BLEDevice central = BLE.central();
   //true if BLE client is connected
@@ -105,12 +111,20 @@ void loop() {
     
   //// PRESSURE DETECTION ////
   if ( (millis() - triggerTimer) > TRIGGER_INTERVAL ){
+
+    //// calcualte average ambient buffer ////
+    avg_amb_p = 0;
+    for (int i = 0; i < P_BUF_SIZE; i++){
+      avg_amb_p += p_buf[i];
+    }
+    avg_amb_p /= P_BUF_SIZE;
+    
     triggerTimer = millis();
     Serial.print("new sample - ");
     pollSensors();
 
     //// detect if underwater ////
-    if ( (pressure.f - prev_pressure) > PTHRESH){
+    if ( (pressure.f - avg_amb_p) > PTHRESH){
       Serial.println("tripped pressure threshold");
       if (!getSample) {
         underwater = true;
@@ -119,23 +133,22 @@ void loop() {
         sampleLimit = MAX_SAMPLES;
       }
     }
-    //// detect if out of water
-    else if ( (prev_pressure - pressure.f) > PTHRESH){
+    //// must be out of water ////
+    else {
       if (underwater){
         Serial.println("detected out of water");
         underwater = false;
       }
+      Serial.println(pressure.f - avg_amb_p); 
+      memmove( p_buf_start, (p_buf_start + 1) , (P_BUF_SIZE - 1)*4 );
+      p_buf[P_BUF_SIZE - 1] = pressure.f;
     }
-    else
-      Serial.println(pressure.f - prev_pressure); 
-
-    prev_pressure = pressure.f;
   }
 
   if (getSample) {
 
     // stop sampling if reached limit or out of water
-    if ((numSamples >= sampleLimit) || !underwater){
+    if ((numSamples >= sampleLimit)){
       getSample = false;
       // only send if data is collected
       if (numSamples > 0)
@@ -208,7 +221,6 @@ void rxReceived(BLEDevice central, BLECharacteristic characteristic) {
 
   if (rx_buffer[0] > 0){
     getSample = true;
-    underwater = true;
     sampleLimit = rx_buffer[0];
   }
 
