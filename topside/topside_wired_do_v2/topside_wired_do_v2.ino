@@ -40,6 +40,7 @@ union Data initPressure, initDO, lat, lng, deg;
 int payloadID = 0;
 bool newData = false;     //new data received
 bool sendData = false;    //data should forward over LoRa
+bool sentData = false;    //controls white LED
 bool underwater = false;
 bool sendGPS = false;
 unsigned long dataTimer = 0;
@@ -198,6 +199,10 @@ void loop() {
           }// data timer
         }//underwater
         else{
+          //handle first instance out of water
+          if (underwater){
+            digitalWrite(LED, 0);
+          }
           underwater = false;
         }//not underwater;
       }//not startup
@@ -268,6 +273,7 @@ void loop() {
         digitalWrite(LED, !digitalRead(LED));
         delay(100);
       }
+      digitalWrite(LED, 1);
     }
     else
       Serial.println("LoRa Message Not Received");
