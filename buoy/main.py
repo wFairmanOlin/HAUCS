@@ -135,6 +135,7 @@ def get_lps_data():
         return pressure, temperature
     except:
         logger.warning("measuring Pressure/Temperature failed")
+        return -1, -1
 
 def get_do_data():
     try:
