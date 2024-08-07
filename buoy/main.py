@@ -216,7 +216,7 @@ i2c = board.I2C()
 gps = adafruit_gps.GPS_GtopI2C(i2c)
 gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
 gps.send_command(b"PMTK220,4000") #update every 10 secs
-gps.debug = True #REMOVE REMOVE REMOVE
+# gps.debug = True #REMOVE REMOVE REMOVE
 gps_time = time.time()
 while time.time() - gps_time < 5:
     gps.update()
