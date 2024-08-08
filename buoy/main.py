@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 logger.info('Starting')
 
 ##### EMAIL #####
-def send_email(body):
+def send_email(body, batt=0):
     with open(folder + "buoy/email_cred.json") as file:
         cred = json.load(file)
 
@@ -69,7 +69,12 @@ def send_email(body):
     msg['From'] = cred['from']
     msg['To'] = ', '.join(cred['to'])
 
-    batt_v = get_battery()
+    if not batt:
+        batt_v = get_battery()
+    else:
+        batt_v = batt
+        logger.warning("sending email without battery input")
+
     pond_id = get_pond_id()
 
 
@@ -153,23 +158,30 @@ def get_do_data():
         return -1
 
 ##### BATTERY #####
-def get_battery():
+def init_battery():
+    global adc
     try:
         adc = ADS1x15.ADS1115(1)
         adc.setGain(1)
+        sleep(0.05)
         val = adc.readADC(0)
-        sleep(0.1)
+    except:
+        logger.warning("battery initialization failed")
+
+def get_battery():
+    try:
         val = adc.readADC(0)
         return round(val * adc.toVoltage() * BATT_MULT, 2)
     except:
-        logger.warning("measuring battery voltage failed")
+        logger.warning("measuring battery voltage failed ... attempting restart")
+        init_battery()
         return -1
     
 def check_battery():
     global batt_count
     batt_v = get_battery()
     if batt_v < 13.4:
-        # print("low voltage!")
+        logger.warning(f"low voltage detected num: {batt_count}", batt=batt_v)
         if batt_count <= 1:
             send_email(f"CRITICAL BATTERY\nsensor is now offline")
             logger.warning(f"critical voltage: shutting down - {batt_v}V")
@@ -240,6 +252,7 @@ for i in range(10):
     
 init_pressure /= 10
 init_do /= 10
+init_battery()
 batt_v = get_battery()
 
 send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}")
@@ -289,7 +302,7 @@ while True:
             if not lat: lat = 0
         except:
             logger.warning("getting gps lat/lng failed")
-            
+
         data = {'do':do, 'init_do':init_do, 'init_pressure':init_pressure,
          'lat':lat, 'lng':lng, 'pid':pond_id, 'pressure':p, 'sid':BUOY_ID, 'temp':t,
          'batt_v':batt_v, 'type':'buoy'}
