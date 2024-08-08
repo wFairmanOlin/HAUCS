@@ -1,4 +1,4 @@
-import json, logging, time, smtplib
+import json, logging, time, smtplib, os
 from time import sleep
 from smbus2 import SMBus, i2c_msg
 import ADS1x15
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 logger.info('Starting')
 
 ##### EMAIL #####
-def send_email(body, batt=0):
+def send_email(body, batt=-1):
     with open(folder + "buoy/email_cred.json") as file:
         cred = json.load(file)
 
@@ -68,17 +68,10 @@ def send_email(body, batt=0):
     msg['From'] = cred['from']
     msg['To'] = ', '.join(cred['to'])
 
-    if not batt:
-        batt_v = get_battery()
-    else:
-        batt_v = batt
-        logger.warning("sending email without battery input")
-
     pond_id = get_pond_id()
 
-
     content = f"{time.strftime('%I:%M %p', time.localtime())}\n"
-    content += f"battery: {batt_v}V\npond: {pond_id}\n"
+    content += f"battery: {batt}V\npond: {pond_id}\n"
     content += body
     msg.set_content(content)
 
@@ -109,12 +102,12 @@ def restart_firebase(app):
 servo = Servo(18, min_pulse_width=0.0009, max_pulse_width=0.0026, pin_factory=PiGPIOFactory())
 
 def wobble(secs):
-    mv_time = 0.31
+    mv_time = 0.5
     cycles = int(secs//(2 * mv_time))
     for i in range(cycles):
-        servo.value = -1
+        servo.value = -0.9
         sleep(mv_time)
-        servo.value = 1
+        servo.value = 0.5
         sleep(mv_time)
     servo.value = 0
     sleep(mv_time)
@@ -182,9 +175,9 @@ def check_battery():
     global batt_count
     batt_v = get_battery()
     if batt_v < 13.4:
-        logger.warning(f"low voltage detected num: {batt_count}", batt=batt_v)
+        logger.warning(f"low voltage detected num: {batt_count}")
         if batt_count <= 1:
-            send_email(f"CRITICAL BATTERY\nsensor is now offline")
+            send_email(f"CRITICAL BATTERY\nsensor is now offline", batt_v)
             logger.warning(f"critical voltage: shutting down - {batt_v}V")
             sleep(10)
             call("sudo shutdown now", shell=True)
@@ -227,40 +220,90 @@ def get_pond_id():
     
     return pond_id
 
+##### GPS #####
+def update_GPS(t):
+    gps_time = time.time()
+    try:
+        while time.time() - gps_time < t:
+            gps.update()
+            sleep(0.01)
+        fails['gps'] = 0
+    except:
+        logger.warning("GPS update routine failed")
+        fails['gps'] += 1
 
 ##### INITIALIZATION #####
-#GPS
+init_file = "init.json"
+
+#load initialization data
+if init_file not in os.listdir():
+    init_data = {'last_boot':time.time(), 'num_boots':0, 'init_do':-1, 'init_pressure':2000, 'last_calibration':time.time()}
+    with open(init_file, 'w') as file:
+        json.dump(init_data, file)
+else:
+    with open(init_file) as file:
+        init_data = json.load(file)
+
+#rebooted within 35 minutes
+if (time.time() - init_data['last_boot']) <= (35 * 60):
+    init_data['num_boots'] += 1
+    logger.info(f"likely problematic reboot {init_data['num_boots']}")
+#else reset reboot counter
+else:
+    init_data['num_boots'] = 0
+
+init_data['last_boot'] = time.time()
+#shutdown system if too many reboots
+if init_data['num_boots'] >= 5:
+    logger.warning(f"REBOOT LOOP DETECTED: shutting off system")
+    call("sudo shutdown now", shell=True)
+
+#SAVE BOOT INFO BEFORE I2C CALLED
+with open(init_file, 'w') as file:
+    json.dump(init_data, file)
+
+temp_p, temp_t = get_lps_data()
+#calibrate if detected out of water
+if (temp_p - init_data['init_pressure']) < 12:
+    init_pressure = 0
+    init_do = 0
+
+    for i in range(10):
+        temp_p, temp_t = get_lps_data()
+        temp_do = get_do_data()
+        sleep(1)
+        init_pressure += temp_p
+        init_do += temp_do
+        
+    init_pressure /= 10
+    init_do /= 10
+    init_data['init_do'] = init_do
+    init_data['init_pressure'] = init_pressure
+    init_data['last_calibration'] = time.time()
+    logger.info("saving new calibration data")
+    with open(init_file, 'w') as file:
+        json.dump(init_data, file)
+#otherwise init data to previous data
+else:
+    init_pressure = init_data['init_pressure']
+    init_do = init_data['init_do']
+    logger.info("using stored calibration data")
+
+#initialize GPS
 i2c = board.I2C()
 gps = adafruit_gps.GPS_GtopI2C(i2c)
 gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
-gps.send_command(b"PMTK220,4000") #update every 10 secs
-# gps.debug = True #REMOVE REMOVE REMOVE
-gps_time = time.time()
-while time.time() - gps_time < 5:
-    gps.update()
-    sleep(0.01)
+gps.send_command(b"PMTK220,8000")
+update_GPS()
 
-#calibration
-init_pressure = 0
-init_do = 0
-
-for i in range(10):
-    temp_p, temp_t = get_lps_data()
-    temp_do = get_do_data()
-    sleep(1)
-    init_pressure += temp_p
-    init_do += temp_do
-    
-init_pressure /= 10
-init_do /= 10
+#initialize battery
 init_battery()
 batt_v = get_battery()
 
-send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}")
+send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
 
 #time of last sample
 last_sample = 0
-
 ##### MAIN LOOP #####
 while True:
     sleep(10)
@@ -268,7 +311,8 @@ while True:
     for i in fails:
         if fails[i] >= 5:
             logger.warning(f"failure detected {fails} rebooting")
-            send_email(f"FAILURE DETECTED\nattempting sensor reboot\n{fails}")
+            if fails['internet'] == 0:
+                send_email(f"FAILURE DETECTED\nattempting sensor reboot\n{fails}", batt_v)
             sleep(10)
             call("sudo reboot", shell=True)
     #sample battery voltage
@@ -320,40 +364,8 @@ while True:
         #upload to firebase
         try:
             db.reference('LH_Farm/pond_' + pond_id + '/' + message_time + '/').set(data)
-            fails['firebase'] = 0
+            fails['internet'] = 0
         except:
             logger.warning("uploading data to firebase failed")
-            fails['firebase'] += 1
-            send_email(f"DATA UPLOAD FAILED\nbackup msg:\nDO: {100 * round(do[-1] / init_do)}%")
-            app = restart_firebase(app)
-            
-    
-# ~ def animate(i, do):
-    # ~ '''
-    # ~ Main Loop Called by FuncAnimation
-    # ~ '''
-    # ~ do_val = get_do_data()
-    # ~ do.pop(0)
-    # ~ do.append(do_val)
-    # ~ l_do.set_ydata(do)
-    # ~ return l_do,
-
-
-# ~ size = 300
-# ~ t_ms = 100
-# ~ fig = plt.figure()
-# ~ ax_do = fig.add_subplot(1,1,1)
-# ~ plt.ylabel('DO')
-# ~ plt.xlabel("seconds")
-# ~ xs = [i * t_ms/1e3 for i in range(size)]
-# ~ do = [0] * size
-# ~ ax_do.set_ylim([0, 125])
-# ~ l_do, = ax_do.plot(xs, do, color='b')
-
-# ~ ani = animation.FuncAnimation(fig,
-    # ~ animate,
-    # ~ fargs=(do,),
-    # ~ interval=t_ms,
-    # ~ blit=True,
-    # ~ cache_frame_data=False)
-# ~ plt.show()
+            fails['internet'] += 1
+            # app = restart_firebase(app)
