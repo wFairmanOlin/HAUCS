@@ -99,15 +99,15 @@ def restart_firebase(app):
 
 ##### SERVO #####
 #Initialize Servo
-servo = Servo(18, min_pulse_width=0.0009, max_pulse_width=0.0026, pin_factory=PiGPIOFactory())
+servo = Servo(18, pin_factory=PiGPIOFactory())
 
 def wobble(secs):
     mv_time = 0.5
     cycles = int(secs//(2 * mv_time))
     for i in range(cycles):
-        servo.value = -0.9
+        servo.value = -0.6
         sleep(mv_time)
-        servo.value = 0.5
+        servo.value = 1
         sleep(mv_time)
     servo.value = 0
     sleep(mv_time)
