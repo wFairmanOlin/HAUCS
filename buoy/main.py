@@ -179,6 +179,8 @@ def check_battery():
             batt_count -= 1
     else:
         batt_count = BATT_COUNTDOWN_MAX
+    
+    return batt_v
 
 ##### POND DISCOVERY #####
 def generate_pond_table():
@@ -192,10 +194,13 @@ def generate_pond_table():
         pond_table[id] = Polygon(coords)
 
 def get_pond_id():
-    lng = gps.longitude
-    if not lng: lng = 0
-    lat = gps.latitude
-    if not lat: lat = 0
+    try:
+        lng = gps.longitude
+        if not lng: lng = 0
+        lat = gps.latitude
+        if not lat: lat = 0
+    except:
+        logger.warning("getting gps lat/lng failed")
     location = Point([lng, lat])
 
     if len(pond_table) == 0:
@@ -245,11 +250,15 @@ last_sample = 0
 ##### MAIN LOOP #####
 while True:
     sleep(10)
-    check_battery()
+    #sample battery voltage
+    batt_v = check_battery()
     gps_time = time.time()
-    while time.time() - gps_time < 2:
-        gps.update()
-        sleep(0.01)
+    try:
+        while time.time() - gps_time < 2:
+            gps.update()
+            sleep(0.01)
+    except:
+        logger.warning("GPS update routine failed")
 
     if (time.time() - last_sample) > (sampling_interval * 60):
         last_sample = time.time()
@@ -268,18 +277,19 @@ while True:
             do[i] = temp_do
             sleep(1)
         
-        #sample battery voltage
-        batt_v = get_battery()
-        
         #find pond
         pond_id = get_pond_id()
         
         #get current GMT time
         message_time = time.strftime('%Y%m%d_%H:%M:%S', time.gmtime(time.time()))
-        lng = gps.longitude
-        lat = gps.latitude
-        if not lng: lng = 0
-        if not lat: lat = 0
+        try:
+            lng = gps.longitude
+            lat = gps.latitude
+            if not lng: lng = 0
+            if not lat: lat = 0
+        except:
+            logger.warning("getting gps lat/lng failed")
+            
         data = {'do':do, 'init_do':init_do, 'init_pressure':init_pressure,
          'lat':lat, 'lng':lng, 'pid':pond_id, 'pressure':p, 'sid':BUOY_ID, 'temp':t,
          'batt_v':batt_v, 'type':'buoy'}
