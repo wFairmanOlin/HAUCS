@@ -233,10 +233,11 @@ def update_GPS(t):
         fails['gps'] += 1
 
 ##### INITIALIZATION #####
-init_file = "init.json"
+init_name = "init.json"
+init_file = folder + "buoy/init.json"
 
 #load initialization data
-if init_file not in os.listdir():
+if init_name not in os.listdir(folder + 'buoy/'):
     init_data = {'last_boot':time.time(), 'num_boots':0, 'init_do':-1, 'init_pressure':2000, 'last_calibration':time.time()}
     with open(init_file, 'w') as file:
         json.dump(init_data, file)
@@ -294,7 +295,7 @@ i2c = board.I2C()
 gps = adafruit_gps.GPS_GtopI2C(i2c)
 gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
 gps.send_command(b"PMTK220,8000")
-update_GPS()
+update_GPS(5)
 
 #initialize battery
 init_battery()
@@ -317,15 +318,7 @@ while True:
             call("sudo reboot", shell=True)
     #sample battery voltage
     batt_v = check_battery()
-    gps_time = time.time()
-    try:
-        while time.time() - gps_time < 2:
-            gps.update()
-            sleep(0.01)
-        fails['gps'] = 0
-    except:
-        logger.warning("GPS update routine failed")
-        fails['gps'] += 1
+    update_GPS(2)
 
     if (time.time() - last_sample) > (sampling_interval * 60):
         last_sample = time.time()
