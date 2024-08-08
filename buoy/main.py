@@ -18,7 +18,6 @@ from subprocess import call
 # import matplotlib.pyplot as plt
 # import matplotlib.animation as animation
 
-
 ############### Running On Startup ###############
 # To configure this script to run on startup for unix systems
 # add a command to the cron scheduler using crontab.
@@ -45,11 +44,11 @@ LPS_CTRL_REG2 = 0x11
 LPS_PRES_OUT_XL = 0x28
 LPS_TEMP_OUT_L = 0x2B
 BATT_MULT = 7.16
-BATT_COUNTDOWN_MAX = 6
+BATT_COUNTDOWN_MAX = 10
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
 
-
+fails = {'gps':0, 'batt':0, 'firebase':0, }
 sampling_interval = 10 #minutes
 sleep(30)
 
@@ -171,9 +170,11 @@ def init_battery():
 def get_battery():
     try:
         val = adc.readADC(0)
+        fails['batt'] = 0
         return round(val * adc.toVoltage() * BATT_MULT, 2)
     except:
-        logger.warning("measuring battery voltage failed ... attempting restart")
+        fails['batt'] += 1
+        logger.warning("measuring battery voltage failed ... attempting adc soft reset")
         init_battery()
         return -1
     
@@ -263,6 +264,13 @@ last_sample = 0
 ##### MAIN LOOP #####
 while True:
     sleep(10)
+    #reboot system if high failure rate encountered
+    for i in fails:
+        if fails[i] >= 5:
+            logger.warning(f"failure detected {fails} rebooting")
+            send_email(f"FAILURE DETECTED\nattempting sensor reboot\n{fails}")
+            sleep(10)
+            call("sudo reboot", shell=True)
     #sample battery voltage
     batt_v = check_battery()
     gps_time = time.time()
@@ -270,8 +278,10 @@ while True:
         while time.time() - gps_time < 2:
             gps.update()
             sleep(0.01)
+        fails['gps'] = 0
     except:
         logger.warning("GPS update routine failed")
+        fails['gps'] += 1
 
     if (time.time() - last_sample) > (sampling_interval * 60):
         last_sample = time.time()
@@ -310,9 +320,10 @@ while True:
         #upload to firebase
         try:
             db.reference('LH_Farm/pond_' + pond_id + '/' + message_time + '/').set(data)
+            fails['firebase'] = 0
         except:
             logger.warning("uploading data to firebase failed")
-
+            fails['firebase'] += 1
             send_email(f"DATA UPLOAD FAILED\nbackup msg:\nDO: {100 * round(do[-1] / init_do)}%")
             app = restart_firebase(app)
             
