@@ -48,7 +48,7 @@ BATT_COUNTDOWN_MAX = 10
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
 
-fails = {'gps':0, 'batt':0, 'firebase':0, }
+fails = {'gps':0, 'batt':0, 'internet':0, }
 sampling_interval = 10 #minutes
 sleep(30)
 
@@ -99,17 +99,19 @@ def restart_firebase(app):
 
 ##### SERVO #####
 #Initialize Servo
-servo = Servo(18, pin_factory=PiGPIOFactory())
+servo = Servo(18, max_pulse_width=0.0023 pin_factory=PiGPIOFactory())
 
 def wobble(secs):
-    mv_time = 0.5
+    with open(folder + "buoy/servo.json") as file:
+        sparam = json.load(file)
+    mv_time = 0.4
     cycles = int(secs//(2 * mv_time))
     for i in range(cycles):
-        servo.value = -0.6
+        servo.value = sparam['high']
         sleep(mv_time)
-        servo.value = 1
+        servo.value = sparam['low']
         sleep(mv_time)
-    servo.value = 0
+    servo.value = sparam['neutral']
     sleep(mv_time)
     servo.detach()
         
