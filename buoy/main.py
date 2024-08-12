@@ -36,7 +36,7 @@ from subprocess import call
 folder = "Desktop/HAUCS/"
 # folder = "Desktop/" #for testing
 
-BUOY_ID = 1
+
 
 DO_ADDR = 0x09
 LPS_ADDR = 0x5D
@@ -50,6 +50,13 @@ pond_table = {}
 
 fails = {'gps':0, 'batt':0, 'internet':0, }
 sampling_interval = 10 #minutes
+
+#Load Buoy ID from param file
+with open(folder + "buoy/param.json") as file:
+        param = json.load(file)
+
+BUOY_ID = param['buoy_id']
+
 sleep(30)
 
 ##### LOGGING #####
@@ -99,19 +106,17 @@ def restart_firebase(app):
 
 ##### SERVO #####
 #Initialize Servo
-servo = Servo(18, max_pulse_width=0.0023 pin_factory=PiGPIOFactory())
+servo = Servo(18, max_pulse_width=0.0023, pin_factory=PiGPIOFactory())
 
 def wobble(secs):
-    with open(folder + "buoy/servo.json") as file:
-        sparam = json.load(file)
     mv_time = 0.4
     cycles = int(secs//(2 * mv_time))
     for i in range(cycles):
-        servo.value = sparam['high']
+        servo.value = param['high']
         sleep(mv_time)
-        servo.value = sparam['low']
+        servo.value = param['low']
         sleep(mv_time)
-    servo.value = sparam['neutral']
+    servo.value = param['neutral']
     sleep(mv_time)
     servo.detach()
         
