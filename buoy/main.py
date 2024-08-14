@@ -15,6 +15,8 @@ import board, adafruit_gps
 from email.message import EmailMessage
 from subprocess import call
 
+import numpy as np
+
 # import matplotlib.pyplot as plt
 # import matplotlib.animation as animation
 
@@ -37,13 +39,13 @@ folder = "Desktop/HAUCS/"
 # folder = "Desktop/" #for testing
 
 
+DO_ALERT = 60
 
 DO_ADDR = 0x09
 LPS_ADDR = 0x5D
 LPS_CTRL_REG2 = 0x11
 LPS_PRES_OUT_XL = 0x28
 LPS_TEMP_OUT_L = 0x2B
-BATT_MULT = 7.16
 BATT_COUNTDOWN_MAX = 10
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
@@ -56,6 +58,7 @@ with open(folder + "buoy/param.json") as file:
         param = json.load(file)
 
 BUOY_ID = param['buoy_id']
+BATT_MULT = param['batt_mult']
 
 sleep(30)
 
@@ -155,6 +158,7 @@ def get_do_data():
     except:
         logger.warning("measuring DO failed")
         return -1
+    
 
 ##### BATTERY #####
 def init_battery():
@@ -272,7 +276,7 @@ with open(init_file, 'w') as file:
 
 temp_p, temp_t = get_lps_data()
 #calibrate if detected out of water
-if (temp_p - init_data['init_pressure']) < 12:
+if abs(temp_p - init_data['init_pressure']) < 12:
     init_pressure = 0
     init_do = 0
 
@@ -332,6 +336,7 @@ while True:
         wobble(25)
         
         #sample data
+        get_do_data()
         size = 10
         p = [0] * size
         t = [0] * size
@@ -344,6 +349,9 @@ while True:
             do[i] = temp_do
             sleep(1)
         
+        avg_do = np.mean(do) / init_do
+        if avg_do <= DO_ALERT:
+            send_email(f"LOW DO\nDO measured at {avg_do}%", batt_v)
         #find pond
         pond_id = get_pond_id()
         
