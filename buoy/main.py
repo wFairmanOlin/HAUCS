@@ -159,6 +159,29 @@ def get_do_data():
         logger.warning("measuring DO failed")
         return -1
     
+def convert_to_mgl(do, t, p, s=0):
+    '''
+    do: dissolved oxygen in percent saturation
+    t: temperature in celcius
+    p: pressure in hPa
+    s: salinity in parts per thousand
+    '''
+    T = t + 273.15 #temperature in kelvin
+    P = p * 9.869233e-4 #pressure in atm
+
+    DO_baseline = np.exp(-139.34411 + 1.575701e5/T - 6.642308e7/np.power(T, 2) + 1.2438e10/np.power(T, 3) - 8.621949e11/np.power(T, 4))
+    # SALINITY CORRECTION
+    Fs = np.exp(-s * (0.017674 - 10.754/T + 2140.7/np.power(T, 2)))
+    # PRESSURE CORRECTION
+    theta = 0.000975 - 1.426e-5 * t + 6.436e-8 * np.power(t, 2)
+    u = np.exp(11.8571 - 3840.7/T - 216961/np.power(T, 2))
+    Fp = (P - u) * (1 - theta * P) / (1 - u) / (1 - theta)
+
+    DO_corrected = DO_baseline * Fs * Fp
+
+    DO_mgl = do / 100 * DO_corrected
+
+    return DO_mgl
 
 ##### BATTERY #####
 def init_battery():
@@ -349,9 +372,11 @@ while True:
             do[i] = temp_do
             sleep(1)
         
-        avg_do = np.mean(do) / init_do
+        avg_do = 100 * np.mean(do) / init_do
+        avg_mgl = convert_to_mgl(avg_do, np.mean(t), init_pressure)
+
         if avg_do <= DO_ALERT:
-            send_email(f"LOW DO\nDO measured at {avg_do}%", batt_v)
+            send_email(f"LOW DO\nDO measured at {round(avg_mgl, 2)}mg/l ({round(avg_do)}%)", batt_v)
         #find pond
         pond_id = get_pond_id()
         
