@@ -51,7 +51,7 @@ batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
 
 fails = {'gps':0, 'batt':0, 'internet':0, }
-sampling_interval = 10 #minutes
+sampling_interval = 20 #minutes
 
 #Load Buoy ID from param file
 with open(folder + "buoy/param.json") as file:
