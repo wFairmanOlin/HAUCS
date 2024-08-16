@@ -138,7 +138,6 @@ def get_lps_data():
             pressure /= 4096
             temperature = x[3] | (x[4] << 8)
             temperature /= 100.0
-            
         return pressure, temperature
     except:
         logger.warning("measuring Pressure/Temperature failed")
@@ -153,7 +152,7 @@ def get_do_data():
             bus.write_byte(DO_ADDR, 0x02)
             sleep(0.01)
             do_high = bus.read_byte(DO_ADDR)
-            # ~ print(do_low, do_high)
+            
         return do_low | (do_high << 8) 
     except:
         logger.warning("measuring DO failed")
@@ -269,10 +268,9 @@ def update_GPS(t):
 ##### INITIALIZATION #####
 init_name = "init.json"
 init_file = folder + "buoy/init.json"
-
 #load initialization data
 if init_name not in os.listdir(folder + 'buoy/'):
-    init_data = {'last_boot':time.time(), 'num_boots':0, 'init_do':-1, 'init_pressure':2000, 'last_calibration':time.time()}
+    init_data = {'last_boot':time.time(), 'num_boots':0, 'init_do':-1, 'init_pressure':-1, 'last_calibration':time.time()}
     with open(init_file, 'w') as file:
         json.dump(init_data, file)
 else:
@@ -299,7 +297,7 @@ with open(init_file, 'w') as file:
 
 temp_p, temp_t = get_lps_data()
 #calibrate if detected out of water
-if abs(temp_p - init_data['init_pressure']) < 12:
+if (abs(temp_p - init_data['init_pressure']) < 12) or (init_data['init_pressure'] == -1):
     init_pressure = 0
     init_do = 0
 
