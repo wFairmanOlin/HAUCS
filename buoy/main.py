@@ -152,7 +152,7 @@ def get_do_data():
             bus.write_byte(DO_ADDR, 0x02)
             sleep(0.01)
             do_high = bus.read_byte(DO_ADDR)
-            
+
         return do_low | (do_high << 8) 
     except:
         logger.warning("measuring DO failed")
@@ -207,7 +207,7 @@ def get_battery():
 def check_battery():
     global batt_count
     batt_v = get_battery()
-    if batt_v < 13.4:
+    if batt_v < 13.9:
         logger.warning(f"low voltage detected num: {batt_count}")
         if batt_count <= 1:
             send_email(f"CRITICAL BATTERY\nsensor is now offline", batt_v)
@@ -359,9 +359,10 @@ while True:
         #sample data
         get_do_data()
         size = 10
-        p = [0] * size
-        t = [0] * size
-        do = [0] * size
+        p = np.zeros(size)
+        t = np.zeros(size)
+        do = np.zeros(size)
+        sleep(0.1)
         for i in range(size):
             temp_p, temp_t = get_lps_data()
             temp_do = get_do_data()
@@ -370,7 +371,7 @@ while True:
             do[i] = temp_do
             sleep(1)
         
-        avg_do = 100 * np.mean(do) / init_do
+        avg_do = 100 * do[do > 0].mean() / init_do
         avg_mgl = convert_to_mgl(avg_do, np.mean(t), init_pressure)
 
         if avg_do <= DO_ALERT:
@@ -388,8 +389,8 @@ while True:
         except:
             logger.warning("getting gps lat/lng failed")
 
-        data = {'do':do, 'init_do':init_do, 'init_pressure':init_pressure,
-         'lat':lat, 'lng':lng, 'pid':pond_id, 'pressure':p, 'sid':BUOY_ID, 'temp':t,
+        data = {'do':float([do[do > 0].mean()]), 'init_do':init_do, 'init_pressure':init_pressure,
+         'lat':lat, 'lng':lng, 'pid':pond_id, 'pressure':float([p.mean()]), 'sid':BUOY_ID, 'temp':float([t.mean()]),
          'batt_v':batt_v, 'type':'buoy'}
         
         #upload to firebase
