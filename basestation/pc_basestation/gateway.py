@@ -13,6 +13,7 @@ import pandas as pd
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 import json
+from subprocess import call
 
 
 ############### Running On Startup ###############
@@ -146,9 +147,9 @@ while True:
     
     #Log Warning if No Message Received after 30 mins
     #reboot computer to power cycle the LoRa Receiver
-    if (time.time() - last_message_received) > 1800:
-        logger.warning("No Message Received for 30 Minutes")
-        last_message_received = time.time()
+    # if (time.time() - last_message_received) > 1800:
+        # logger.warning("No Message Received for 30 Minutes")
+        # last_message_received = time.time()
         #os.system('sudo reboot')
 
     try:
@@ -195,7 +196,6 @@ while True:
                     data["pid"] = pond_id
                     data["sid"] = message[1]
                     data["type"] = "bathy"
-                    data["time"] = message_time
 
                     #update bathy
                     try:
@@ -224,29 +224,14 @@ while True:
                         data["pid"] = pond_id
                         data["sid"] = message[1]
                         data["type"] = "truck"
-                        data["time"] = message_time
 
                         #update specific pond
                         try:
                             pond_ref = ref.child("pond_" + pond_id)
                             pond_ref.child(message_time).set(data)
                         except:
-                            logger.warning("uploading DO message to pond_id failed")
-                            app, ref = restart_firebase(app)
-                        
-                        #update overview
-                        overview_do = int(100 * float(get_do(data['pressure'], data['do']))/float(data['init_do']))
-
-                        try:
-                            overview_ref = ref.child("overview/pond_" + pond_id)
-                            overview_ref.child('last_do').set(overview_do)
-                        except:
-                            logger.warning("uploading DO message to overview failed")
-                            app, ref = restart_firebase(app)
-
-
-
-
+                            logger.warning("uploading DO message to pond_id failed .. restarting")
+                            call("sudo reboot", shell=True)
                     else:
                         logger.warning("DO Message Length Mis-Match %s", message)
 
