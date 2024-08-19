@@ -391,7 +391,7 @@ while True:
 
         data = {'do':[float(do[do > 0].mean())], 'init_do':init_do, 'init_pressure':init_pressure,
          'lat':lat, 'lng':lng, 'pid':pond_id, 'pressure':[float(p.mean())], 'sid':BUOY_ID, 'temp':[float(t.mean())],
-         'batt_v':batt_v, 'type':'buoy'}
+         'batt_v':batt_v, 'type':'buoy', 'time':message_time}
         
         #upload to firebase
         try:
