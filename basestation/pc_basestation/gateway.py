@@ -170,7 +170,7 @@ while True:
 
             if len(message) >= 1:
                 message_id = message[1]
-                message_time = time.strftime('%Y%m%d_%H:%M:%S', time.gmtime(time.time()))
+                message_time = time.strftime('%Y%m%d_%H:%M:%S', time.gmtime())
 
                 #Bathymetry
                 if message_id == '4':
@@ -195,15 +195,7 @@ while True:
                     data["pid"] = pond_id
                     data["sid"] = message[1]
                     data["type"] = "bathy"
-
-                    #update recent
-                    try:
-                        recent_data = db.reference('/LH_Farm/recent').order_by_key().limit_to_last(9).get()
-                        recent_data[message_time] = data
-                        db.reference('/LH_Farm/recent').set(recent_data)
-                    except:
-                        logger.warning("uploading DO message to recent failed")
-                        app, ref = restart_firebase(app)
+                    data["time"] = message_time
 
                     #update bathy
                     try:
@@ -213,7 +205,6 @@ while True:
                         logger.warning("uploading BATHY message failed")
                         app, ref = restart_firebase(app)
 
-                    
 
                 # DO Message
                 elif message_id.isnumeric():
@@ -233,15 +224,7 @@ while True:
                         data["pid"] = pond_id
                         data["sid"] = message[1]
                         data["type"] = "truck"
-
-                        #update recent
-                        try:
-                            recent_data = db.reference('/LH_Farm/recent').order_by_key().limit_to_last(9).get()
-                            recent_data[message_time] = data
-                            db.reference('/LH_Farm/recent').set(recent_data)
-                        except:
-                            logger.warning("uploading DO message to recent failed")
-                            app, ref = restart_firebase(app)
+                        data["time"] = message_time
 
                         #update specific pond
                         try:
