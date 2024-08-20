@@ -83,6 +83,7 @@ def send_email(body, batt=-1):
     content = f"{time.strftime('%I:%M %p', time.localtime())}\n"
     content += f"battery: {batt}V\npond: {pond_id}\n"
     content += body
+    content += "\nhttp://www.sailhboi.com/pond" + pond_id
     msg.set_content(content)
 
     try:
