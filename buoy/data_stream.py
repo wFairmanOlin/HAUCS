@@ -23,7 +23,7 @@ def get_do_data():
             bus.write_byte(DO_ADDR, 0x02)
             sleep(0.01)
             do_high = bus.read_byte(DO_ADDR)
-            # ~ print(do_low, do_high)
+            print(do_low | (do_high << 8))
         return do_low | (do_high << 8) 
     except:
         return -1
