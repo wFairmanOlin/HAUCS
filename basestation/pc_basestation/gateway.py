@@ -183,7 +183,7 @@ while True:
                         
                     pond_id = "unknown"
                     for i in pond_table:
-                        if pond_table[i].contains(Point([data['lng'], data['lat']])):
+                        if pond_table[i].contains(Point([float(data['lng']), float(data['lat'])])):
                             pond_id = str(i)
                             break
 

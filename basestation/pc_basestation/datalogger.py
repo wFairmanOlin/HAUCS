@@ -88,10 +88,6 @@ def processSensor(message):
     return data
 
 def uploadData(gdata, sdata, timestamp):
-    """
-    Uploads Data to the Real-Time Database in Firebase. Pond ID is currently
-    hardcoded. Will be replaced by a lookup table in a future version
-    """
     pid = str(findPond(gdata["LAT"], gdata["LNG"]))
     print(pid)
 
