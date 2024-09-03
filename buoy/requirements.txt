@@ -5,3 +5,4 @@ ADS1x15-ADC
 firebase-admin
 shapely
 Adafruit-circuitpython-gps
+matplotlib
