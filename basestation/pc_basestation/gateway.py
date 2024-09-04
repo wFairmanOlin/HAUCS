@@ -34,8 +34,7 @@ from subprocess import call
 folder = "Desktop/HAUCS/basestation/pc_basestation/"
 # folder = "" #for testing
 #############################################
-
-
+time.sleep(30)
 def init_serial(port):
     """
     Initialize Serial Port
@@ -132,7 +131,7 @@ ref = db.reference('/LH_Farm')
 ############### GLOBAL VARIABLES ###############
 buf = b'' #serial input buffer
 
-last_heartbeat = time.time()
+last_heartbeat = 0
 
 ## FOR fdata ##
 fdata_data = dict()
@@ -155,7 +154,7 @@ while True:
         except:
             logger.warning("heartbeat failed")
             call("sudo reboot", shell=True)
-            
+
     try:
         c = ser.read()
     except:

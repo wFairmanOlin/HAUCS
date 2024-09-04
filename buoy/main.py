@@ -60,6 +60,8 @@ with open(folder + "buoy/param.json") as file:
 BUOY_ID = param['buoy_id']
 BATT_MULT = param['batt_mult']
 
+
+
 sleep(30)
 
 ##### LOGGING #####
@@ -70,6 +72,14 @@ logger.info('Starting')
 
 ##### EMAIL #####
 def send_email(body, batt=-1):
+    try:
+        email_data = db.reference('LH_Farm/email/credentials').get()
+        email_data['to'] = db.reference('LH_Farm/email/buoy_notifications').get()
+        with open(folder + 'buoy/email_cred.json', 'w') as file:
+            json.dump(email_data, file)
+    except:
+        logger.warning('cannot create email credential file')
+
     with open(folder + "buoy/email_cred.json") as file:
         cred = json.load(file)
 
