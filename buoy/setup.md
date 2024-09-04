@@ -51,7 +51,7 @@ This document outlines the software setup and provides useful information for th
 ## Parameter File
 1. cd into HAUCS/buoy directory
 1. create 'param.json' file and write the following information. The information should be updated for each buoy.
-    - `{"low":-0.8, "high":0.95, "neutral":-0.4, "max_pulse":0.0025, "min_pulse":0.0008, "buoy_id":x, "batt_mult":7.16}`
+    - `{"low":-0.8, "high":0.95, "neutral":-0.4, "max_pulse":0.0024, "min_pulse":0.0009, "buoy_id":x, "batt_mult":7.16}`
 
 ## Realtime Database Key
 1. Copy `fb_key.json` file into main HAUCS folder
