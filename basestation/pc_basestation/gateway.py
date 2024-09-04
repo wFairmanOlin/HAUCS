@@ -132,7 +132,7 @@ ref = db.reference('/LH_Farm')
 ############### GLOBAL VARIABLES ###############
 buf = b'' #serial input buffer
 
-last_message_received = time.time() #time that latest general message was received
+last_heartbeat = time.time()
 
 ## FOR fdata ##
 fdata_data = dict()
@@ -145,13 +145,17 @@ pond_table = get_pond_table()
 #message: from 3 lat 27.535619 lng -80.351821 deg 0.000000 initP 1016.50 initDO 0 p 1015.75 t 28.16 do 0
 while True:
     
-    #Log Warning if No Message Received after 30 mins
-    #reboot computer to power cycle the LoRa Receiver
-    # if (time.time() - last_message_received) > 1800:
-        # logger.warning("No Message Received for 30 Minutes")
-        # last_message_received = time.time()
-        #os.system('sudo reboot')
-
+    #HEARTBEAT
+    
+    if (time.time() - last_heartbeat) > 60:
+        last_heartbeat = time.time()
+        hbeat = {'time':time.time()}
+        try:
+            db.reference('LH_Farm/equipmennt/truck_basestation').set(hbeat)
+        except:
+            logger.warning("heartbeat failed")
+            call("sudo reboot", shell=True)
+            
     try:
         c = ser.read()
     except:
