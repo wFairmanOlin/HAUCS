@@ -34,7 +34,6 @@ from subprocess import call
 folder = "Desktop/HAUCS/basestation/pc_basestation/"
 # folder = "" #for testing
 #############################################
-time.sleep(30)
 def init_serial(port):
     """
     Initialize Serial Port
@@ -103,6 +102,8 @@ def get_do(p, d):
     idx = np.argmax(np.array(p, dtype='float'))
     return d[idx]
 
+#sleep for a minute and a half before doing anything
+time.sleep(90)
 ############### LOGGING ###############
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'log.log', encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)
