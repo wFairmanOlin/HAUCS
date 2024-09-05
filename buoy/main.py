@@ -1,5 +1,7 @@
 import json, logging, time, smtplib, os
 from time import sleep
+from datetime import datetime
+import pytz
 from smbus2 import SMBus, i2c_msg
 import ADS1x15
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -14,6 +16,7 @@ import board, adafruit_gps
 
 from email.message import EmailMessage
 from subprocess import call
+
 
 import numpy as np
 
@@ -90,7 +93,7 @@ def send_email(body, batt=-1):
 
     pond_id = get_pond_id()
 
-    content = f"{time.strftime('%I:%M %p', time.localtime())}\n"
+    content = f"{datetime.now(pytz.timezone('US/Central')).strftime('%I:%M %p')} CT\n"
     content += f"battery: {batt}V\npond: {pond_id}\n"
     content += body
     content += "\nhttp://www.sailhboi.com/pond" + pond_id
@@ -123,7 +126,7 @@ def restart_firebase(app):
 servo = Servo(18, min_pulse_width=param['min_pulse'], max_pulse_width=param['max_pulse'], pin_factory=PiGPIOFactory())
 
 def wobble(secs):
-    mv_time = 0.4
+    mv_time = 0.35
     cycles = int(secs//(2 * mv_time))
     for i in range(cycles):
         servo.value = param['high']
