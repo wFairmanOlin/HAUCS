@@ -44,6 +44,9 @@ This document outlines the software setup and provides useful information for th
 1. Follow PPP Setup:  https://docs.sixfab.com/page/setting-up-the-ppp-connection-for-sixfab-shield-hat
     -  go into Sixfab PPP librbray and modify `ppp_install.sh`
     - Add `--break-system-packages` to pip install line
+1. `pip3 install atcom`
+1. `sudo apt install minicom`
+1. `sudo minicom -b 115200 -D /dev/ttyS0`
 
 ## Crontab
 1. `@reboot ~/buoy/bin/python3 ~/Desktop/HAUCS/buoy/main.py &>> ~/Desktop/HAUCS/buoy/cronlog.log`

@@ -148,7 +148,7 @@ while True:
     
     if (time.time() - last_heartbeat) > 60:
         last_heartbeat = time.time()
-        hbeat = {'time':time.time()}
+        hbeat = {'time':time.time(), 'flagged':0}
         try:
             db.reference('LH_Farm/equipmennt/truck_basestation').set(hbeat)
         except:
