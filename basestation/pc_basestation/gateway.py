@@ -102,8 +102,8 @@ def get_do(p, d):
     idx = np.argmax(np.array(p, dtype='float'))
     return d[idx]
 
-#sleep for a minute and a half before doing anything
-time.sleep(90)
+#sleep for 2 minutes
+time.sleep(120)
 ############### LOGGING ###############
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'log.log', encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -164,7 +164,10 @@ while True:
         time.sleep(10)
         ser  = init_serial(port + str(portnum))
 
-    if(c):
+    if not c:
+        #do nothing
+        time.sleep(1)
+    else:
         buf = b''.join([buf, c])
 
         if buf[-1] == 13: #ends with carriage return
