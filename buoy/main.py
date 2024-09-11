@@ -42,7 +42,7 @@ folder = "Desktop/HAUCS/"
 # folder = "Desktop/" #for testing
 
 
-DO_ALERT = 60
+DO_ALERT = 40
 
 DO_ADDR = 0x09
 LPS_ADDR = 0x5D
@@ -284,6 +284,7 @@ init_name = "init.json"
 init_file = folder + "buoy/init.json"
 #load initialization data
 if init_name not in os.listdir(folder + 'buoy/'):
+    logger.info('no init file detected. creating new one')
     init_data = {'last_boot':time.time(), 'num_boots':0, 'init_do':-1, 'init_pressure':-1, 'last_calibration':time.time()}
     with open(init_file, 'w') as file:
         json.dump(init_data, file)
@@ -312,6 +313,7 @@ with open(init_file, 'w') as file:
 temp_p, temp_t = get_lps_data()
 #calibrate if detected out of water
 if (abs(temp_p - init_data['init_pressure']) < 12) or (init_data['init_pressure'] == -1):
+    logger.info(f"pressure {round(temp_p)}, init_pressure {round(init_data['init_pressure'])}")
     init_pressure = 0
     init_do = 0
 
