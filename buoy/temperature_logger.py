@@ -1,7 +1,7 @@
 
 import csv
 import os
-import datetime
+from datetime import datetime
 from gpiozero import CPUTemperature
 import time
 
@@ -26,10 +26,11 @@ def init_file(folder, header):
 
 header = ['time', 'temperature']
 cpu = CPUTemperature()
-file = init_file()
+file = init_file(folder, header)
 start_time = time.time()
 while True:
-    t = time.time() - start_time()
+    t = time.time() - start_time
     with open(file,'a',newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow([t, cpu.temperature])
+    time.sleep(30)
