@@ -313,27 +313,31 @@ if (temp_p < (init_data['init_pressure'] + 10)) or (init_data['init_pressure'] =
     logger.info(f"pressure {round(temp_p)}, init_pressure {round(init_data['init_pressure'])}")
     init_pressure = 0
     init_do = 0
+    n_samples = 15
 
-    for i in range(15):
+    for i in range(n_samples):
         temp_p, temp_t = get_lps_data()
         temp_do = get_do_data()
         sleep(1)
         init_pressure += temp_p
         init_do += temp_do
         
-    init_pressure /= 10
-    init_do /= 10
+    init_pressure /= n_samples
+    init_do /= n_samples
     init_data['init_do'] = init_do
     init_data['init_pressure'] = init_pressure
     init_data['last_calibration'] = time.time()
     logger.info("saving new calibration data")
     with open(init_file, 'w') as file:
         json.dump(init_data, file)
+    wobble(1)
 #otherwise init data to previous data
 else:
     init_pressure = init_data['init_pressure']
     init_do = init_data['init_do']
     logger.info("using stored calibration data")
+    wobble(2)
+
 
 #initialize GPS
 i2c = board.I2C()
@@ -347,9 +351,7 @@ init_battery()
 batt_v = get_battery()
 
 send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
-
-#MOVE SERVO TO INDICATE INITIALIZATION FINISHED
-wobble(1)
+sleep(20)
 
 #time of last sample
 last_sample = 0
