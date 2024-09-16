@@ -41,9 +41,6 @@ import numpy as np
 folder = "Desktop/HAUCS/"
 # folder = "Desktop/" #for testing
 
-
-DO_ALERT = 40
-
 DO_ADDR = 0x09
 LPS_ADDR = 0x5D
 LPS_CTRL_REG2 = 0x11
@@ -62,7 +59,6 @@ with open(folder + "buoy/param.json") as file:
 
 BUOY_ID = param['buoy_id']
 BATT_MULT = param['batt_mult']
-
 
 
 sleep(30)
@@ -390,8 +386,6 @@ while True:
         avg_do = 100 * do[do > 0].mean() / init_do
         avg_mgl = convert_to_mgl(avg_do, np.mean(t), init_pressure)
 
-        if avg_do <= DO_ALERT:
-            send_email(f"LOW DO\nDO measured at {round(avg_mgl, 2)}mg/l ({round(avg_do)}%)", batt_v)
         #find pond
         pond_id = get_pond_id()
         
