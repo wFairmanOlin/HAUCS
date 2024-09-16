@@ -60,9 +60,6 @@ with open(folder + "buoy/param.json") as file:
 BUOY_ID = param['buoy_id']
 BATT_MULT = param['batt_mult']
 
-
-sleep(30)
-
 ##### LOGGING #####
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'buoy/log.log', encoding='utf-8',
                     level=logging.INFO)
@@ -105,10 +102,6 @@ def send_email(body, batt=-1):
         logger.warning("failed to send an email")
 
 ##### FIREBASE #####
-# Store Key in separate file !!!
-cred = credentials.Certificate(folder + "fb_key.json")
-app = firebase_admin.initialize_app(cred, {'databaseURL': 'https://haucs-monitoring-default-rtdb.firebaseio.com'})
-
 def restart_firebase(app):
     logging.info('Attempting to restart Firebase Connection')
     firebase_admin.delete_app(app)
@@ -118,9 +111,6 @@ def restart_firebase(app):
     return new_app
 
 ##### SERVO #####
-#Initialize Servo
-servo = Servo(18, min_pulse_width=param['min_pulse'], max_pulse_width=param['max_pulse'], pin_factory=PiGPIOFactory())
-
 def wobble(secs):
     mv_time = 0.35
     cycles = int(secs//(2 * mv_time))
@@ -275,9 +265,20 @@ def update_GPS(t):
         logger.warning("GPS update routine failed")
         fails['gps'] += 1
 
+
+
+
 ##### INITIALIZATION #####
+sleep(30)
+#Firebase
+# Store Key in separate file !!!
+cred = credentials.Certificate(folder + "fb_key.json")
+app = firebase_admin.initialize_app(cred, {'databaseURL': 'https://haucs-monitoring-default-rtdb.firebaseio.com'})
+#Initialize Servo
+servo = Servo(18, min_pulse_width=param['min_pulse'], max_pulse_width=param['max_pulse'], pin_factory=PiGPIOFactory())
 init_name = "init.json"
 init_file = folder + "buoy/init.json"
+
 #load initialization data
 if init_name not in os.listdir(folder + 'buoy/'):
     logger.info('no init file detected. creating new one')
@@ -308,12 +309,12 @@ with open(init_file, 'w') as file:
 
 temp_p, temp_t = get_lps_data()
 #calibrate if detected out of water
-if (abs(temp_p - init_data['init_pressure']) < 12) or (init_data['init_pressure'] == -1):
+if (temp_p < (init_data['init_pressure'] + 10)) or (init_data['init_pressure'] == -1):
     logger.info(f"pressure {round(temp_p)}, init_pressure {round(init_data['init_pressure'])}")
     init_pressure = 0
     init_do = 0
 
-    for i in range(10):
+    for i in range(15):
         temp_p, temp_t = get_lps_data()
         temp_do = get_do_data()
         sleep(1)
@@ -346,6 +347,9 @@ init_battery()
 batt_v = get_battery()
 
 send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
+
+#MOVE SERVO TO INDICATE INITIALIZATION FINISHED
+wobble(1)
 
 #time of last sample
 last_sample = 0
