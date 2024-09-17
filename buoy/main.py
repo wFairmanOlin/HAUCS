@@ -38,7 +38,8 @@ import numpy as np
 # log in the local "log.log" file.
 #
 # Let the computer establish a network connection on reboot
-folder = "Desktop/HAUCS/"
+# folder = "Desktop/HAUCS/"
+folder = ""
 # folder = "Desktop/" #for testing
 
 DO_ADDR = 0x09
@@ -351,7 +352,7 @@ init_battery()
 batt_v = get_battery()
 
 send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
-sleep(20)
+sleep(5)
 
 #time of last sample
 last_sample = 0
