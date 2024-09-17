@@ -17,7 +17,7 @@ then
         sudo reboot
     fi
 else
-    echo "false, local changes"
+    echo "local changes, won't pull"
 fi
-
-/home/haucs/usr/bin/python3 buoy/main.py
+echo "running  main script"
+/home/haucs/buoy/bin/python3 buoy/main.py
