@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "Hello World!"
 cd /home/haucs/Desktop/HAUCS
 
 sleep 60
