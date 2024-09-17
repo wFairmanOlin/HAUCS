@@ -2,7 +2,7 @@
 echo "Hello World!"
 cd /home/haucs/Desktop/HAUCS
 
-sleep 30
+sleep 60
 status_resp=$(git status -s --untracked-files=no)
 
 if [ -z "$status_resp" ]
