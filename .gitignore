@@ -17,3 +17,4 @@ haucs/mission_planner/test.py
 *.log
 *.waypoints
 *.zip
+*.xlsx
