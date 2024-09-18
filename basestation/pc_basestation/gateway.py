@@ -147,7 +147,7 @@ while True:
     
     #HEARTBEAT
     
-    if (time.time() - last_heartbeat) > 60:
+    if (time.time() - last_heartbeat) > 600:
         last_heartbeat = time.time()
         hbeat = time.time()
         try:

@@ -17,9 +17,12 @@ then
         echo "$pull_resp"
     else
         echo "pulled nothing, already up to date"
+        echo "$pull_resp"
     fi
 else
     echo "local changes present, can't pull"
 fi
-echo "running main script"
-/home/haucs/buoy/bin/python3 buoy/main.py
+echo "running script"
+
+# /home/haucs/buoy/bin/python3 buoy/main.py
+/home/haucs/buoy/bin/python3 $1

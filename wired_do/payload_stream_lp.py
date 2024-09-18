@@ -65,7 +65,7 @@ def animate(i, do, p, t):
                     p.append(float(message[3]))
                     t.append(float(message[5]))
                     writeCSV(file, time.time() - time_start, [message[1], p[-1], t[-1]])
-                    print(round(do[-1]), message[1])
+                    print(round(do[-1]), message[1], message[5])
                 buf = b''
 
 
@@ -79,8 +79,8 @@ def animate(i, do, p, t):
 
 header = ['time', 'do', 'pressure', 'temperature']
 # port = '/dev/cu.usbmodem101'
-# port = '/dev/cu.usbmodem1201'
-port = '/dev/cu.usbmodem1101'
+port = '/dev/cu.usbmodem1201'
+# port = '/dev/cu.usbmodem1101'
 ser  = init_serial(port)
 file = init_file(header)
 
@@ -102,7 +102,7 @@ p = [0] * size
 do = [0] * size
 ax_do.set_ylim([0, 110])
 ax_p.set_ylim([1010, 1100])
-ax_t.set_ylim([20, 30])
+ax_t.set_ylim([25, 41])
 # Create a blank line. We will update the line in animate
 l_do, = ax_do.plot(xs, do, color='b')
 l_p, = ax_p.plot(xs, p, color='r')

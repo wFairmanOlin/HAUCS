@@ -11,3 +11,9 @@ haucs/mission_planner/test.py
 *email_cred.json
 *param.json
 *.png
+*.csv
+*.json
+*.txt
+*.log
+*.waypoints
+*.zip
