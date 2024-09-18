@@ -32,6 +32,7 @@ import numpy as np
 # Paste the following line
 #
 # @reboot /usr/bin/python3 /home/Desktop/Biomass/pc_basestation/gateway.py &>> /home/Desktop/Biomass/pc_basestation/cronlog.log
+# @reboot /home/haucs/Desktop/HAUCS/buoy/startup.sh >> /home/haucs/Desktop/HAUCS/buoy/cronlog.log 2>&1
 #
 # This runs the program when the device is powered on and stores the output in
 # the local "cronlog.log" file. Please note that the python script outputs a more detailed
