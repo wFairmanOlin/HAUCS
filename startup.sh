@@ -22,7 +22,6 @@ then
 else
     echo "local changes present, can't pull"
 fi
-echo "running script"
-
+echo "running script $1"
 # /home/haucs/buoy/bin/python3 buoy/main.py
 /home/haucs/buoy/bin/python3 $1
