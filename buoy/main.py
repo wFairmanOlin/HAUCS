@@ -31,7 +31,7 @@ import numpy as np
 #
 # Paste the following line
 #
-# @reboot /home/haucs/Desktop/HAUCS/buoy/startup.sh >> /home/haucs/Desktop/HAUCS/buoy/cronlog.log 2>&1
+# @reboot /home/haucs/Desktop/HAUCS/startup.sh buoy/main.py >> /home/haucs/Desktop/HAUCS/buoy/cronlog.log 2>&1
 #
 # This runs the program when the device is powered on and stores the output in
 # the local "cronlog.log" file. Please note that the python script outputs a more detailed
@@ -270,7 +270,6 @@ def update_GPS(t):
 
 
 ##### INITIALIZATION #####
-sleep(30)
 #Firebase
 # Store Key in separate file !!!
 cred = credentials.Certificate(folder + "fb_key.json")
