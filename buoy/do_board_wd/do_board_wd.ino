@@ -22,7 +22,7 @@ volatile int msg_size = 0;
 
 void setup() {
   wdt_reset();
-  wdt_enable(WDTO_2S);
+  wdt_enable(WDTO_4S);
 
   pinMode(LED, OUTPUT);
   pinMode(DO, INPUT);
@@ -33,7 +33,7 @@ void setup() {
   Wire.onReceive(receiveEvent);
   data[0] = 0x02;
   
-  for (int i = 0; i < 5; i++){
+  for (int i = 0; i < 4; i++){
     digitalWrite(LED, 1);
     delay(50);
     digitalWrite(LED, 0);

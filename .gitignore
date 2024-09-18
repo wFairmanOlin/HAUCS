@@ -8,3 +8,6 @@ haucs/mission_planner/test.py
 *.DS_store
 *.pkl
 *.mat
+*email_cred.json
+*param.json
+*.png
