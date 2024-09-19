@@ -50,6 +50,7 @@ LPS_TEMP_OUT_L = 0x2B
 BATT_COUNTDOWN_MAX = 10
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
+pond_history = np.array([])
 
 fails = {'gps':0, 'batt':0, 'internet':0, }
 sampling_interval = 20 #minutes
@@ -208,7 +209,7 @@ def get_battery():
 def check_battery():
     global batt_count
     batt_v = get_battery()
-    if batt_v < 13.9:
+    if batt_v < 14:
         logger.warning(f"low voltage detected num: {batt_count}")
         if batt_count <= 1:
             send_email(f"CRITICAL BATTERY\nsensor is now offline", batt_v)
@@ -250,9 +251,21 @@ def get_pond_id():
     for i in pond_table:
         if pond_table[i].contains(location):
             pond_id = str(i)
-            return pond_id
-    
-    return pond_id
+            break
+        
+    #update pond_history
+    if len(pond_history) < 7:
+        pond_history = np.append(pond_history, [pond_id])
+    else:
+        pond_history = np.append(pond_history[1:8], [pond_id])
+    #get most common occurence
+    pond_list, counts = np.unique(pond_history, return_counts=True)
+    common_pond_id = pond_list[counts == counts.max()][0]
+
+    if common_pond_id != pond_id:
+        logger.info(f"detected in {pond_id}, most common pond {common_pond_id}, pond_history {pond_history}")
+
+    return common_pond_id
 
 ##### GPS #####
 def update_GPS(t):
