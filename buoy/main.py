@@ -72,7 +72,9 @@ logger.info('Starting')
 def send_email(body, batt=-1):
     try:
         email_data = db.reference('LH_Farm/email/credentials').get()
-        email_data['to'] = db.reference('LH_Farm/email/buoy_notifications').get()
+        email_to = db.reference('LH_Farm/email/buoy_notifications').get()
+        email_to = [i for i in email_to if i != None]
+        email_data['to'] = email_to
         with open(folder + 'buoy/email_cred.json', 'w') as file:
             json.dump(email_data, file)
     except:
