@@ -237,6 +237,7 @@ def generate_pond_table():
         pond_table[id] = Polygon(coords)
 
 def get_pond_id():
+    global pond_history
     try:
         lng = gps.longitude
         if not lng: lng = 0
