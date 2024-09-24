@@ -1,4 +1,4 @@
-import json, logging, time, smtplib, os
+import json, logging, time, smtplib, os, sys
 from time import sleep
 from datetime import datetime
 import pytz
@@ -16,7 +16,6 @@ import board, adafruit_gps
 
 from email.message import EmailMessage
 from subprocess import call
-
 
 import numpy as np
 
@@ -41,6 +40,11 @@ import numpy as np
 # folder = "Desktop/HAUCS/"
 folder = ""
 # folder = "Desktop/" #for testing
+#Handle Inputs
+if (sys.argv) > 1:
+    timer_only = sys.argv[1]
+else:
+    timer_only = "false"
 
 DO_ADDR = 0x09
 LPS_ADDR = 0x5D
@@ -48,6 +52,7 @@ LPS_CTRL_REG2 = 0x11
 LPS_PRES_OUT_XL = 0x28
 LPS_TEMP_OUT_L = 0x2B
 BATT_COUNTDOWN_MAX = 10
+SHUTDOWN_TIME = 16 * 60 * 60
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
 pond_history = np.array([])
@@ -256,7 +261,7 @@ def get_pond_id():
             pond_id = str(i)
             break
         
-    #update pond_history
+    #update pond_historys
     if len(pond_history) < 7:
         pond_history = np.append(pond_history, [pond_id])
     else:
@@ -294,6 +299,7 @@ app = firebase_admin.initialize_app(cred, {'databaseURL': 'https://haucs-monitor
 servo = Servo(18, min_pulse_width=param['min_pulse'], max_pulse_width=param['max_pulse'], pin_factory=PiGPIOFactory())
 init_name = "init.json"
 init_file = folder + "buoy/init.json"
+start_time = time.time()
 
 #load initialization data
 if init_name not in os.listdir(folder + 'buoy/'):
@@ -382,10 +388,18 @@ while True:
                 send_email(f"FAILURE DETECTED\nattempting sensor reboot\n{fails}", batt_v)
             sleep(10)
             call("sudo reboot", shell=True)
+    #timer based shutdown
+    if (time.time() - start_time) > SHUTDOWN_TIME:
+        if timer_only.lower() == "true":
+            logger.info("timer initiated buoy shutdown")
+            send_email(f"SHTDWN TIMER\nshutdown timer triggered. sensor is now offline", batt_v)
+            sleep(10)
+            call("sudo shutdown now", shell=True)
     #sample battery voltage
     batt_v = check_battery()
     update_GPS(2)
 
+    #initiate sample
     if (time.time() - last_sample) > (sampling_interval * 60):
         last_sample = time.time()
         wobble(25)

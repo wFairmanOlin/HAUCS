@@ -24,4 +24,4 @@ else
 fi
 echo "running script $1"
 # /home/haucs/buoy/bin/python3 buoy/main.py
-/home/haucs/buoy/bin/python3 $1
+/home/haucs/buoy/bin/python3 $1 $2
