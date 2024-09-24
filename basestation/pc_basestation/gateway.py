@@ -20,18 +20,18 @@ from subprocess import call
 # To configure this script to run on startup for unix systems
 # add a command to the cron scheduler using crontab.
 #
-# Run "sudo crontab -e" to open the editor
+# Run "crontab -e" to open the editor
 #
 # Paste the following line
 #
-# @reboot /usr/bin/python3 /home/Desktop/Biomass/pc_basestation/gateway.py &>> /home/Desktop/Biomass/pc_basestation/cronlog.log
+# @reboot /home/haucs/Desktop/HAUCS/startup.sh basestation/pc_basestation/gateway.py >> /home/haucs/Desktop/HAUCS/basestation/pc_basestation/cronlog.log 2>&1
 #
 # This runs the program when the device is powered on and stores the output in
 # the local "cronlog.log" file. Please note that the python script outputs a more detailed
 # log in the local "log.log" file.
 #
 # Let the computer establish a network connection on reboot
-folder = "Desktop/HAUCS/"
+folder = ""
 # folder = "" #for testing
 #############################################
 def init_serial(port):
@@ -103,7 +103,7 @@ def get_do(p, d):
     return d[idx]
 
 #sleep for 2 minutes
-time.sleep(120)
+# time.sleep(120)
 ############### LOGGING ###############
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'basestation/pc_basestation/log.log', encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)

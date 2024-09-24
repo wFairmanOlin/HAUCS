@@ -3,7 +3,7 @@ pulled_something="Unpacking objects"
 
 cd /home/haucs/Desktop/HAUCS
 
-sleep 30
+sleep 40
 status_resp=$(git status -s --untracked-files=no)
 
 # if no files have been changed

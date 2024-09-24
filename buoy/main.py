@@ -26,7 +26,7 @@ import numpy as np
 # To configure this script to run on startup for unix systems
 # add a command to the cron scheduler using crontab.
 #
-# Run "sudo crontab -e" to open the editor
+# Run "crontab -e" to open the editor
 #
 # Paste the following line
 #
