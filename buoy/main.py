@@ -41,7 +41,7 @@ import numpy as np
 folder = ""
 # folder = "Desktop/" #for testing
 #Handle Inputs
-if (sys.argv) > 1:
+if len(sys.argv) > 1:
     timer_only = sys.argv[1]
 else:
     timer_only = "false"
