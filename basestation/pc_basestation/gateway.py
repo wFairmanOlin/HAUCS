@@ -31,7 +31,7 @@ from subprocess import call
 # log in the local "log.log" file.
 #
 # Let the computer establish a network connection on reboot
-folder = "Desktop/HAUCS/basestation/pc_basestation/"
+folder = "Desktop/HAUCS/"
 # folder = "" #for testing
 #############################################
 def init_serial(port):
@@ -76,7 +76,7 @@ def get_pond_table():
     return ponds
 
 def get_pond_id(lat, lng):
-    df = pd.read_csv(folder + 'sampling_points.csv')
+    df = pd.read_csv(folder + 'basestation/pc_basestation/sampling_points.csv')
     pond_ids = df.pop('pond')
     pond_gps = df.to_numpy()
 
@@ -105,7 +105,7 @@ def get_do(p, d):
 #sleep for 2 minutes
 time.sleep(120)
 ############### LOGGING ###############
-logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'log.log', encoding='utf-8', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename=folder + 'basestation/pc_basestation/log.log', encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info('Starting with IP: ' + get_IP())
 
