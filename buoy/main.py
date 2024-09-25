@@ -55,7 +55,7 @@ BATT_COUNTDOWN_MAX = 10
 SHUTDOWN_TIME = 16 * 60 * 60
 batt_count = BATT_COUNTDOWN_MAX
 pond_table = {}
-pond_history = np.array([])
+pond_history = np.array(["unknown"])
 
 fails = {'gps':0, 'batt':0, 'internet':0, }
 sampling_interval = 20 #minutes
@@ -262,7 +262,9 @@ def get_pond_id():
             break
         
     #update pond_historys
-    if len(pond_history) < 7:
+    if pond_id == "unknown":
+        pass # do not append
+    elif len(pond_history) < 7:
         pond_history = np.append(pond_history, [pond_id])
     else:
         pond_history = np.append(pond_history[1:8], [pond_id])
