@@ -216,17 +216,18 @@ def get_battery():
 def check_battery():
     global batt_count
     batt_v = get_battery()
-    if batt_v < 14:
-        logger.warning(f"low voltage detected num: {batt_count}")
-        if batt_count <= 1:
-            send_email(f"CRITICAL BATTERY\nsensor is now offline", batt_v)
-            logger.warning(f"critical voltage: shutting down - {batt_v}V")
-            sleep(10)
-            call("sudo shutdown now", shell=True)
+    if timer_only != "true":
+        if batt_v < 14:
+            logger.warning(f"low voltage detected num: {batt_count}")
+            if batt_count <= 1:
+                send_email(f"CRITICAL BATTERY\nsensor is now offline", batt_v)
+                logger.warning(f"critical voltage: shutting down - {batt_v}V")
+                sleep(10)
+                call("sudo shutdown now", shell=True)
+            else:
+                batt_count -= 1
         else:
-            batt_count -= 1
-    else:
-        batt_count = BATT_COUNTDOWN_MAX
+            batt_count = BATT_COUNTDOWN_MAX
     
     return batt_v
 
