@@ -375,7 +375,7 @@ update_GPS(5)
 init_battery()
 batt_v = get_battery()
 
-send_email(f"POWERED ON\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
+send_email(f"POWERED ON\ntimer mode: {timer_only == "true"}\ncalibration: {round(init_do, 1)} {round(temp_t, 1)} {round(init_pressure)}", batt_v)
 sleep(5)
 
 #time of last sample
