@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+<title>HAUCS Analytics</title>
+
+  <script> 
+    const geoFile_HAUCS = JSON.parse({{ data|tojson }});
+    const do_HAUCS = JSON.parse({{ do_values|tojson}});
+  </script>
+
+  <!-- <base href="."> -->
+  <title>HAUCS Map</title>
+  <link rel="stylesheet" type="text/css" href="static/css/map_style.css" />
+  <!-- <link rel="stylesheet" type="text/css" href="static/css/analytics.css" />   -->
+  <script src="{{ url_for('static', filename='js/haucs_map_script.js') }}"></script>
+
+{% endblock %}
+
+{% block body %}
+
+<!-- <section class="content">
+    <p>Click on a pond to see data:</p>
+    
+</section> -->
+
+<!-- <div id="map_container">
+  <div id="map"></div>
+</div> -->
+<body>
+  <div id="map"></div>
+</body>
+
+
+
+<!-- <div class="legend">
+  <h3>Legend:</h3>
+  <ul>
+
+    <li>
+      <div class="circle" style="background: green;"></div>
+      High Dissolved Oxygen Levels
+    </li>
+    <li>
+      <div class="circle" style="background: yellow;"></div>
+      Medium Dissolved Oxygen Levels
+    </li>
+    <li>
+      <div class="circle" style="background: red;"></div>
+      Low Dissolved Oxygen Levels
+    </li>
+    <li>
+      <div class="circle" style="background: grey;"></div>
+      No data collected recently
+    </li>
+    <li><img src="/static/images/aerator_on.svg" alt=""> Aerator status on</li>
+    <li><img src="/static/images/aerator_off.svg" alt=""> Aerator status off</li>
+</div> -->
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQZZk_BUDTJwYN2TCsPwVJGLxkiMiSzPg&loading=async&callback=initMap&v=beta&libraries=marker"
+  defer
+></script>
+<!-- <script>
+  (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+    key: "AIzaSyCQZZk_BUDTJwYN2TCsPwVJGLxkiMiSzPg",
+    v: "weekly",
+  });
+</script> -->
+
+{% endblock %}

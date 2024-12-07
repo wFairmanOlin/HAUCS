@@ -1,0 +1,58 @@
+/*-------- home page content styling --------*/
+/* body{
+    background-image: url('/static/images/background.png');
+    background-repeat: no-repeat;
+    background-position: center 150px ;
+    background-size: auto auto;
+} */
+
+.title{
+    width: 100%;
+    position: absolute;
+    margin-top: 2%;
+    text-align: center;
+}
+
+.title h1{
+    font-family: 'Bebas Neue';
+    font-size: 85px;
+    letter-spacing: 9px;
+}
+
+.title p{
+    width: 75%;
+    margin: auto;
+    margin-top: 1%;
+    font-size: 20px;
+    line-height: 40px;
+    color: rgb(37, 65, 73); 
+    text-size-adjust: auto;
+    font-weight: 600;
+}
+
+.images img{
+    width: 20%;
+    padding: 2%;
+}
+
+@media(max-width: 850px) {
+    .title h1{
+        margin: 3% 2%;
+        font-size: 50px;
+        line-height: 60px;
+        letter-spacing: 6px;
+    }
+
+    .title p{
+        font-size: 18px;
+        line-height: 30px;
+        width: 80%;
+        margin-top: 2%;
+    }
+
+    .images img{
+        margin-top: 2%;
+        width: 40%;
+    }
+}
+

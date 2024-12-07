@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+<title>Pond {{ pond_id }}</title>
+<link rel="stylesheet" href="static/css/pond.css">
+
+{% endblock %}
+
+{% block body %}
+    <div class="chart-container">
+        <table class="table">
+            <tbody>
+            <th scope="rowgroup" colspan="2"><h2>Pond {{ pond_id }}</h2></th>
+            <tr>
+                <td>last sample</td>
+                <td><span id="lastDate"></span></td>
+            </tr>
+            <tr>
+                <td>from sensor</td>
+                <td><span id="lastSensor"></span></td>
+            </tr>
+            <tr>
+            <tr>
+                <td>dissolved oxygen</td>
+                <td><span id="lastDOMGL"></span> mg/l (<span id="lastDO"></span>%)</td>
+            </tr>
+            <tr>
+                <td>water temperature</td>
+                <td><span id="lastTemperature"></span> &degF</td>
+            </tr>
+            <tr>
+                <td><label for="starDate" class="combobox-label">start date</label></td>
+                <td><input type="datetime-local" id="startDate" name="start" onchange="handleDates()"></td> 
+            </tr>
+            <tr>
+                <td><label for="endDate" class="combobox-label">end time</label></td>
+                <td><input type="datetime-local" id="endDate" name="end" onchange="handleDates()"></td>
+            </tr>
+            <tr>
+                <td><label class="combobox-label">go to pond</label></td>
+                <td><input type="text" id="goToPond" onchange="handlePondChange()" size="5"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="chartContainer">
+        <canvas id="doChart"></canvas>
+    </div>
+    <div class="chartContainer">
+        <canvas id="temperatureChart"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@0.2.0"></script>
+    <script src="{{ url_for('static', filename='js/helper.js') }}"></script>
+ 
+  <script>
+    function handleDates(){
+        let start = luxon.DateTime.fromISO(document.getElementById('startDate').value, {"zone":"US/Central"});
+        let end = luxon.DateTime.fromISO(document.getElementById('endDate').value, {"zone":"US/Central"});
+        start = start.setZone("UTC");
+        end = end.setZone("UTC");
+        const startString = start.toFormat("yyyyMMdd_HH:mm:ss", {"zone":"UTC"});
+        const endString = end.toFormat("yyyyMMdd_HH:mm:ss", {"zone":"UTC"});
+        fetchAndDisplay(startString, endString);
+    }
+
+    function handlePondChange(){
+        const newPondId = document.getElementById('goToPond').value;
+        window.location.replace("/pond" + newPondId);
+    }
+
+    function prep_data(data) {
+        for (var key in data){
+            const do_mgl = convert_to_mgl(100 * data[key]['do'].at(-1)/data[key]['init_do'], data[key]['temp'].at(-1), data[key]['init_pressure'], 0);
+            const temp_f = 32 + (data[key]['temp'].at(-1) * 9/5);
+            data[key]['do_mgl'] = do_mgl;
+            data[key]['temp_f'] = temp_f;
+            data[key]['time_ms'] = luxon.DateTime.fromFormat(key, "yyyyMMdd_HH:mm:ss", {"zone":"UTC"});
+        };
+        return data;
+    };
+
+    function generate_graph(myChart, data, id, ylabel){
+        if (myChart){
+            myChart.destroy();
+        };
+
+        let hourFormat = 'MM/dd hh:mm a';
+        if (window.screen.width < 500 || window.screen.height < 500)
+            hourFormat = 'hh a';
+
+        myChart = new Chart(id, {
+            type: 'scatter',
+            data: data,
+            options: {
+                responsive:true,
+                maintainAspectRatio:false,
+                scales:{
+                    x:{
+                        type:'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                            'hour': hourFormat
+                            }
+                        },
+                        ticks:{
+                            maxTicksLimit:10,
+                        },
+                        adapters:{
+                            date: {
+                                zone:"US/Central",
+                            }
+                        }
+                    },
+                    y:{
+                      title:{
+                        display:true,
+                        text:ylabel,
+                      }
+                    },
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false,
+                },
+                elements: {
+                    point: {
+                        // pointRadius: 1,
+                        pointHoverRadius: 7,
+                    }
+                },  
+            },
+            plugins: [{
+                afterDraw: chart => {
+                if (chart.tooltip?._active?.length) {
+                    let x = chart.tooltip._active[0].element.x;
+                    let yAxis = chart.scales.y;
+                    let ctx = chart.ctx;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(x, yAxis.top);
+                    ctx.lineTo(x, yAxis.bottom);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.4)';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                }
+          }],
+        });
+        return myChart;
+    };
+
+    async function fetchMostRecent() {
+        const pondId = "{{pond_id}}";
+        const start = luxon.DateTime.now().minus(1000 * 60 * 60 * 24).setZone("UTC").toFormat("yyyyMMdd_HH:mm:ss");
+        const end = luxon.DateTime.now().setZone("UTC").toFormat("yyyyMMdd_HH:mm:ss");
+        var res = await fetch('/dataTime/LH_Farm pond_' + pondId + ' ' + start + ' ' + end + ' ' + 1);
+        var data = await res.json();
+        data = await prep_data(data);
+        console.log(data);
+        const lastKey = Object.keys(data).at(-1)
+        const lastDate = luxon.DateTime.fromFormat(lastKey, "yyyyMMdd_HH:mm:ss", {"zone":"UTC"}).setZone("US/Central");
+        document.getElementById('lastDate').textContent=lastDate.toFormat("MM/dd hh:mm a ZZZZ");
+        document.getElementById('lastDOMGL').textContent= Math.round(data[lastKey]['do_mgl'], 1);
+        document.getElementById('lastDO').textContent=Math.round(data[lastKey]['do'],1);
+        document.getElementById('lastTemperature').textContent=Math.round(data[lastKey]['temp_f'],1);
+        document.getElementById('lastSensor').textContent= data[lastKey]['type'] + " " + data[lastKey]['sid'];
+    }
+
+    async function fetchAndDisplay(start, end) {
+        const pondId = "{{pond_id}}";
+        var res = await fetch('/dataTime/LH_Farm pond_' + pondId + ' ' + start + ' ' + end);
+        var data = await res.json();
+        data = await prep_data(data);
+        //prepare do data
+        var do_buoy = [];
+        var do_truck = [];
+        for (const key in data){
+            const dp = {'x':data[key]['time_ms'].ts, 'y':data[key]['do_mgl']}
+            if (data[key]['type'] == "buoy"){
+                do_buoy.push(dp);
+            }
+            else if (data[key]['type'] == "truck"){
+                do_truck.push(dp);
+            }
+        }
+        //prepare temp _data
+        var temp_buoy = [];
+        var temp_truck = [];
+        for (const key in data){
+            const dp = {'x':data[key]['time_ms'].ts, 'y':data[key]['temp_f']}
+            if (data[key]['type'] == "buoy"){
+                temp_buoy.push(dp);
+            }
+            else if (data[key]['type'] == "truck"){
+                temp_truck.push(dp);
+            }
+        }
+
+        const data1 = {
+            datasets: [
+                {
+                type: 'scatter',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                data: do_buoy,
+                label:"buoy"
+                },
+                {
+                type: 'scatter',
+                borderColor: 'rgba(1, 120, 255, 1)',
+                backgroundColor: 'rgba(1, 120, 255, 0.5)',
+                data: do_truck,
+                label:"truck"
+                }
+            ],
+        };
+        const data2 = {
+            datasets: [
+                {
+                type: 'scatter',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                data: temp_buoy,
+                label:"buoy"
+                },
+                {
+                type: 'scatter',
+                borderColor: 'rgba(1, 120, 255, 1)',
+                backgroundColor: 'rgba(1, 120, 255, 0.5)',
+                data: temp_truck,
+                label:"truck"
+                }
+            ],
+        };
+        doChart = generate_graph(doChart, data1, 'doChart', 'DO (mg/l)');
+        temperatureChart = generate_graph(temperatureChart, data2, 'temperatureChart', 'Temperature (F)');
+    };
+    document.getElementById('endDate').value= luxon.DateTime.now().toFormat("yyyy-MM-dd'T'HH:mm", {'zone':'US/Central'});
+    document.getElementById('startDate').value= (luxon.DateTime.now().minus(1000 * 60 * 60 * 24 * 3)).toFormat("yyyy-MM-dd'T'HH:mm", {'zone':'US/Central'});
+    let doChart = new Chart('doChart');
+    let temperatureChart = new Chart('temperatureChart');
+    handleDates();
+    fetchMostRecent();
+  </script>
+
+{% endblock %}

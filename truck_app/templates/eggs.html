@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+    <title>Egg Data</title>
+
+<link rel="stylesheet" href="static/css/eggs.css">
+
+{% endblock %}
+
+{% block body %}
+
+<body class="sensor-body">
+
+    <div class="egg_heading">
+        <h1>Egg Data</h1>
+    </div>
+
+    <div class="data_summary">
+        <h1>Data Summary</h1>
+        <li>Last time of data collection: {{last_time}} on {{last_date}}</li>
+        <li>Last browser refresh: {{last_refresh}}</li>
+      </div>
+
+    <div class = "graph">
+        <img src="{{ url_for('static', filename='graphs/egg/egg_eye_1_detect.png')}}">
+    </div>
+
+    <div class = "graph">
+        <img src="{{ url_for('static', filename='graphs/egg/egg_eye_1_peaks.png')}}">
+    </div>
+    
+    <div class = "graph">
+        <img src="{{ url_for('static', filename='graphs/egg/egg_eye_1_timeseries.png')}}">
+    </div>
+
+    <div class = "graph">
+        <img src="{{ url_for('static', filename='graphs/egg/egg_eye_1_frequency.png')}}">
+    </div>
+
+</body>
+
+{% endblock %}

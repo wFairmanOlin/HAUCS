@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% if sensor_id %}
+    <title>Sensor {{ sensor_id }}</title>
+{% else %}
+    <title>Invalid Sensor</title>
+{% endif %}
+
+<link rel="stylesheet" href="static/css/sensors.css">
+
+{% endblock %}
+
+{% block body %}
+
+<body class="sensor-body">
+
+    <div class="tank_number">
+        <h1>Tank {{sensor_id}}</h1>
+    </div>
+
+    <div class="data_summary">
+        <h1>Data Summary</h1>
+        <li>Sensor Battery Voltage: {{last_battv}} V</li>
+        <li>Last time of data collection: {{last_time}} on {{last_date}}</li>
+      </div>
+
+    <div class = "graph">
+        <h1>Data Collected <br> over the last 7 Days</h1>
+        <img src="{{ url_for('static', filename='graphs/biomass/'+sensor_id|string + '_bmass_diff.png')}}">
+    </div>
+
+</body>
+
+{% endblock %}
