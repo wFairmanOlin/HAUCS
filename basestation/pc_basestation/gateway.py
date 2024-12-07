@@ -31,7 +31,7 @@ from subprocess import call
 # log in the local "log.log" file.
 #
 # Let the computer establish a network connection on reboot
-folder = ""
+folder = "Desktop/HAUCS"
 # folder = "" #for testing
 #############################################
 def init_serial(port):
