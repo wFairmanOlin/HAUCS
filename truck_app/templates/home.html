@@ -5,10 +5,41 @@
 <title>Truck GUI</title>
 <link rel="stylesheet" href="static/css/home.css">
 
+<script>
+    window.onload = function(){
+        document.getElementById('batt_v').textContent = "0.00";
+
+    }
+</script>
+<script>
+    function updateData(){
+    fetch('/dat')
+        .then(response => response.json())
+        .then(json => {
+            if (json) {
+                console.log(json)
+                for (var key in json){
+                    document.getElementById(key).textContent = json[key];
+                }
+            }
+        })
+    }
+    setInterval(updateData, 100);
+</script>
 {% endblock %}
 
 {% block body %}
-<h1>Truck GUI</h1>
+<div class="chart-container">
+    <table class="table">
+        <tbody>
+        <th scope="rowgroup" colspan="2"><h2>Truck GUI</h2></th>
+        <tr>
+            <td>Sensor Voltage</td>
+            <td><span id="batt_v"></span></td>
+        </tr>
+        </tbody>
+    </table>
+  </div>
 
 
 
