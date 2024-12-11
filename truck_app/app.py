@@ -6,13 +6,15 @@ import numpy as np
 import pytz
 import random
 import time
-# from adafruit_ble import BLERadio
-# from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
-# from adafruit_ble.services.nordic import UARTService
+from adafruit_ble import BLERadio
+from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
+from adafruit_ble.services.nordic import UARTService
 
 ###BLE SETUP
-# ble = BLERadio()
+ble = BLERadio()
 uart_connection = None
+
+sensor_file = "data/sensor.json"
 
 app = Flask(__name__)
 
@@ -29,15 +31,12 @@ def about():
 '''
 Data Source: call this from javascript to get fresh data
 '''
-@app.route('/dat', methods=['GET'])
+@app.route('/sdata', methods=['GET'])
 def get_ble():
-    print("called")
-    # ble_uart_write("batt")
-    # msg = ble_uart_read()
-    msg = str(round(random.randint(320,420)/100, 2))
-    # msg = "4.10"
-    data =  {'batt_v':msg}
-    return jsonify(data)
+    with open(sensor_file) as file:
+        sdata = json.load(file)
+        
+    return jsonify(sdata)
 
 @app.route('/data/' + '<ref>', methods=['GET'])
 def data(ref):
@@ -82,52 +81,7 @@ def history():
     
     return render_template('history.html', data=data)
 
-def ble_uart_read():
-    if not uart_connection:
-        print("Trying to connect ...")
-        for adv in ble.start_scan(ProvideServicesAdvertisement):
-            if UARTService in adv.services:
-                uart_connection = ble.connect(adv)
-                print("connected to board with uart")
-                print(adv)
-                print(uart_connection)
-                break
-        ble.stop_scan()
 
-    if uart_connection and uart_connection.connected:
-        uart_service = uart_connection[UARTService]
-        if uart_connection.connected:
-            msg = uart_service.readline().decode()
-            while len(msg) > 0:
-                print(msg)
-                msg = uart_service.readline().decode()
-
-            return "this works"
-            #s = input("msg: ")
-            #if s == "q":
-            #    ble.disconnect()
-            #uart_service.write(s.encode("ASCII"))
-    
-    return "this doesn't work"
-
-def ble_uart_write(msg):
-    if not uart_connection:
-        print("Trying to connect ...")
-        for adv in ble.start_scan(ProvideServicesAdvertisement):
-            if UARTService in adv.services:
-                uart_connection = ble.connect(adv)
-                print("connected to board with uart")
-                print(adv)
-                print(uart_connection)
-                break
-        ble.stop_scan()
-
-    if uart_connection and uart_connection.connected:
-        uart_service = uart_connection[UARTService]
-        if uart_connection.connected:
-            uart_service.write(msg.encode())
-        else:
-            print("failed to send")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@
 </script>
 <script>
     function updateData(){
-    fetch('/dat')
+    fetch('/sdata')
         .then(response => response.json())
         .then(json => {
             if (json) {
@@ -24,7 +24,7 @@
             }
         })
     }
-    setInterval(updateData, 100);
+    setInterval(updateData, 1000);
 </script>
 {% endblock %}
 
@@ -32,10 +32,33 @@
 <div class="chart-container">
     <table class="table">
         <tbody>
-        <th scope="rowgroup" colspan="2"><h2>Truck GUI</h2></th>
         <tr>
-            <td>Sensor Voltage</td>
-            <td><span id="batt_v"></span></td>
+            <td> SID</td>
+            <td><span id="name"></span></td>
+        </tr>
+        <tr>
+            <td>BLE</td>
+            <td><span id="connection"></span></td>
+        </tr>
+        <tr>
+            <td>BAT</td>
+            <td><span id="battv"></span></td
+        </tr>
+        <tr>
+            <td>CHG</td>
+            <td><span id="batt_status"></span></td>
+        </tr>
+        <tr>
+            <td>%DO</td>
+            <td><span id="do"></span></td
+        </tr>
+        <tr>
+            <td>HPA</td>
+            <td><span id="pressure"></span></td
+        </tr>
+        <tr>
+            <td>&#8457</td>
+            <td><span id="temperature"></span></td
         </tr>
         </tbody>
     </table>
