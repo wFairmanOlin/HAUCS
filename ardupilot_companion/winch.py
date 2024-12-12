@@ -5,18 +5,32 @@ from gpiozero import Servo
 import time
 
 #Initialize Servo
-servo = Servo(18, min_pulse_width=param['min_pulse'], max_pulse_width=param['max_pulse'], pin_factory=PiGPIOFactory())
+servo = Servo(18, pin_factory=PiGPIOFactory())
 #Initialize ADC
 adc = ADS1x15.ADS1115(1)
 adc.setGain(1)
 time.sleep(0.05)
 
+hall_min = 948
+hall_max = 12285
+
 def winch_control():
     dist = adc.readADC(0)
+    target_dist = hall_min
     while True:
-        time.sleep(1)
-        dist = adc.readADC(0)
-        print(dist)
+        dist = adc.readADC(0) - target_dist
+        pwr = dist / (hall_max - hall_min)
+        if pwr > 0.3:
+            pwr = 0.3
+        elif pwr < 0:
+            pwr = 0
+                
+        if (dist < 1_000) and (servo.value > 0.0):
+            servo.value = 0.0
+            print("auto stop")
+        elif (dist < 10_000) and (servo.value > 0.0):
+            servo.value = pwr
+        #print(dist)
 
 
 wcontrol = threading.Thread(target=winch_control)
@@ -33,3 +47,5 @@ while True:
     elif cmd[0] == 'q':
         print("stopping")
         servo.detach()
+    elif cmd[0] == 'p':
+        print(servo.value)

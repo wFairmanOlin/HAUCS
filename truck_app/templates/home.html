@@ -5,32 +5,11 @@
 <title>Truck GUI</title>
 <link rel="stylesheet" href="static/css/home.css">
 
-<script>
-    window.onload = function(){
-        document.getElementById('batt_v').textContent = "0.00";
-
-    }
-</script>
-<script>
-    function updateData(){
-    fetch('/sdata')
-        .then(response => response.json())
-        .then(json => {
-            if (json) {
-                console.log(json)
-                for (var key in json){
-                    document.getElementById(key).textContent = json[key];
-                }
-            }
-        })
-    }
-    setInterval(updateData, 1000);
-</script>
 {% endblock %}
 
 {% block body %}
 <div class="chart-container">
-    <table class="table">
+    <table class="table" style="float:left">
         <tbody>
         <tr>
             <td> SID</td>
@@ -62,8 +41,50 @@
         </tr>
         </tbody>
     </table>
+    <div style="float:right">
+        <img id="graph" style="max-height:400px">
+      </div>
   </div>
 
 
+
+<script>
+
+    async function updateData(){
+        let response = await fetch('/sdata')
+        let data = await response.json()
+
+        for (var key in data){
+            if (key == "sample_id"){
+                console.log("hit")
+                let old_id = img_id;
+                img_id = data[key];
+                if (img_id != old_id){
+                    get_image();
+                }
+            }
+            else{
+                document.getElementById(key).textContent = data[key];
+            }
+        }
+    }
+    
+    async function get_image(){
+        let response = await fetch('/idata');
+        if (response.status == 200){
+            const imageBlob = await response.blob()
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+            document.getElementById('graph').src = imageObjectURL;
+        }
+        else {
+            console.log("here")
+        }
+    }
+
+    var img_id = "";
+    updateData();
+    setInterval(updateData, 1000);
+
+</script>
 
 {% endblock %}
