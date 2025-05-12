@@ -1,12 +1,3 @@
-"""
-1. Have a function to save all non-volatile variables
-- make underwater threshold nvm
-- make auto sample rate nvm
-- make do_calibration variable
-2. Initialize and update ambient pressure
-3. Initialize and update 100% DO
-4. Sample while underwater
-"""
 import board
 import microcontroller
 from analogio import AnalogIn
@@ -21,16 +12,19 @@ import lps28
 import math
 import pwmio
 import supervisor
+import alarm
 
+
+CODE_VERSION = "2.25"
 print(gc.mem_free())
-# supervisor.set_next_code_file(None, reload_on_error=True)
+supervisor.set_next_code_file(None, reload_on_error=True)
 
 ### DotStar Setup
 pxl = adafruit_dotstar.DotStar(board.APA102_SCK, board.APA102_MOSI, 1)
 ### LED Setup
 rled = pwmio.PWMOut(board.D5, frequency=5000, duty_cycle = 0)
 gled = pwmio.PWMOut(board.MOSI, frequency=5000, duty_cycle=0)
-led_pulse = [    0,     0,     0,     0,     0,     0,     0,     1,     1,
+led_pulse = [    0,     0,     0,     0,     0,     0,     0,
            1,     2,     2,     2,     3,     3,     4,     5,     5,
            6,     7,     8,     9,    10,    12,    13,    15,    17,
           19,    22,    24,    27,    31,    35,    39,    44,    49,
@@ -41,7 +35,7 @@ led_pulse = [    0,     0,     0,     0,     0,     0,     0,     1,     1,
         3182,  3559,  3981,  4454,  4982,  5572,  6233,  6972,  7799,
         8723,  9758, 10914, 12208, 13656, 15275, 17085, 19111, 21376,
        23911, 26745, 29916, 33462, 37429, 41866, 46829, 52380, 58589,
-       65535]
+       65535, 65535, 65535]
 ### LPS28 Setup
 lps = lps28.LPS28(board.I2C())
 
@@ -52,30 +46,71 @@ advertisement = ProvideServicesAdvertisement(uart)
 
 ### get stored parameters
 nvm_size = 100
-nvm_keys = ['id', 'sample_type','sample_hz', 'max_sample','init_p', 'threshold','init_do']
+nvm_keys = ['blight', 'id', 'sample_type', 'sample_hz', 'max_sample',
+            'init_p', 'threshold', 'init_do', 'light', 'stream',
+            'do_unit', 'pmode', 'pidle', 'psleep', 'pdelay']
+            
+nvm_types = {'blight':'string','id':'string', 'sample_type':'string','sample_hz':'float',
+            'max_sample':'int', 'init_p':'float', 'threshold':'float','init_do':'float',
+            'light':'string','stream':'float','do_unit':'string','pmode':'string',
+            'pidle':'int','psleep':'int', 'pdelay':'int'}
+            
+#default nvm_data if restore needed
+nvm_default = "on," #led on boot
+nvm_default += "00," #default id
+nvm_default += "auto," #default sample type
+nvm_default += "1.0," #default sample freq
+nvm_default += "1000," #default max sample size
+nvm_default += "0.01," #default initial pressure
+nvm_default += "2.0," #default threshold
+nvm_default += "1," #default initial DO
+nvm_default += "off," #default light setting
+nvm_default += "0," #default stream setting
+nvm_default += "percent," #unit for DO while streaming
+nvm_default += "low," #power mode
+nvm_default += "5," #time to idle before sleeping
+nvm_default += "25," #time to sleep before rebooting
+nvm_default += "300," #extra time to wait after activity
+
+print(len(nvm_default))
 try:
     nvm_data = microcontroller.nvm[0:nvm_size].decode()
 except:
+    nvm_data = nvm_default
     print("no parameters in non-volatile storage")
-    nvm_data = "00," #default id
-    nvm_data += "auto," #default sample type
-    nvm_data += "1.0," #default sample freq
-    nvm_data += "1000," #default max sample size
-    nvm_data += "0.0," #default initial pressure
-    nvm_data += "8.0," #default threshold
-    nvm_data += "1," #default initial DO
 
+def get_setting(name):
+    global settings, nvm_types
+    var = settings.get(name)
+    var_type = nvm_types.get(name)
+    if var_type == "float":
+        return float(var)
+    elif var_type == "int":
+        return int(var)
+    else:
+        return var
 
 ### settings dictionary
-# all settings should be strings
-settings = {"stream": "0",
-            "light": "off",
-            }
-
+settings = {}
+nvm_default_vars = nvm_default.split(",")
 nvm_vars = nvm_data.split(",")
+
+# check if all settings are present
+if len(nvm_vars) != (len(nvm_keys) + 1):
+    print("settings not in nvm. Possibly due to code update")
+    nvm_vars = nvm_default_vars
+# write settings
 for i, key in enumerate(nvm_keys):
     settings[key] = nvm_vars[i]
+    try:
+        get_setting(key)
+    except:
+        print(f"invalid setting for {key}, assigning default")
+        settings[key] = nvm_default_vars[i]
+        
 
+settings["version"] = CODE_VERSION
+print(settings)
 ### global variables
 sampling = 0
 sample_count = 0
@@ -84,19 +119,43 @@ tstamp = []
 do = []
 temperature = []
 pressure = []
-charge_state = "unknown"
+charge_state = "not charging"
 battery_voltage = AnalogIn(board.A2)
 charger_status = AnalogIn(board.A1)
 do_voltage = AnalogIn(board.A0)
+ble_advertising = 0
 
-def get_voltage(pin, mult=1):
-    return pin.value * 3.3 / 65536 * mult
+def safe_ble_write(msg):
+    try:
+        uart.write(str(msg).encode())
+    except:
+        print("failed to write " + str(msg))
 
-def sample_sensors():
-    do = round(do_voltage.value / int(settings['init_do']),2)
-    pressure, temperature = lps.pressure_temperature
+def get_setting(name):
+    global settings, nvm_types
+    var = settings.get(name)
+    var_type = nvm_types.get(name)
+    if var_type == "float":
+        return float(var)
+    elif var_type == "int":
+        return int(var)
+    else:
+        return var
 
-    return [do, temperature, pressure]
+def set_setting(name, value):
+    global settings, nvm_types
+    var_type = nvm_types.get(name)
+    if not var_type:
+        print("setting doesn't exist")
+    else:
+        try:
+            if var_type == "float":
+                float(value)
+            elif var_type == 'int':
+                int(value)
+            settings[name] = str(value)
+        except:
+            print("value type different from setting type")
 
 def save_settings():
     global nvm_keys
@@ -104,14 +163,50 @@ def save_settings():
     for key in nvm_keys:
         nvm_data += settings[key] + ','
     nvm_data += (nvm_size - len(nvm_data)) * "0"
-    microcontroller.nvm[0:nvm_size] = nvm_data.encode()
+    if len(nvm_data) > nvm_size:
+        print("cannot save, nvm_data larger than available size")
+    else:
+        microcontroller.nvm[0:nvm_size] = nvm_data.encode()
+
+def get_voltage(pin, mult=1):
+    return pin.value * 3.3 / 65536 * mult
+
+def sample_sensors():
+    do = round(do_voltage.value / get_setting('init_do'), 2)
+    pressure, temperature = lps.pressure_temperature
+
+    return [do, temperature, pressure]
+
+def convert_to_mgl(do, t, p, s=0):
+    '''
+    do: dissolved oxygen in percent saturation
+    t: temperature in celcius
+    p: pressure in hPa
+    s: salinity in parts per thousand
+    '''
+    T = t + 273.15 #temperature in kelvin
+    P = p * 9.869233e-4 #pressure in atm
+
+    DO_baseline = math.exp(-139.34411 + 1.575701e5/T - 6.642308e7/math.pow(T, 2) + 1.2438e10/math.pow(T, 3) - 8.621949e11/math.pow(T, 4))
+    # SALINITY CORRECTION
+    Fs = math.exp(-s * (0.017674 - 10.754/T + 2140.7/math.pow(T, 2)))
+    # PRESSURE CORRECTION
+    theta = 0.000975 - 1.426e-5 * t + 6.436e-8 * math.pow(t, 2)
+    u = math.exp(11.8571 - 3840.7/T - 216961/math.pow(T, 2))
+    Fp = (P - u) * (1 - theta * P) / (1 - u) / (1 - theta)
+
+    DO_corrected = DO_baseline * Fs * Fp
+
+    DO_mgl = do / 100 * DO_corrected
+
+    return DO_mgl
 
 def calibrate_do():
     n = 10
     do = 0
     for i in range(n):
         do += do_voltage.value
-    settings['init_do'] = str(int(do / n))
+    set_setting('init_do', int(do / n))
     print(settings)
     save_settings()
 
@@ -121,11 +216,11 @@ def calibrate_p():
     for i in range(n):
         pressure += lps.pressure
     pressure /= n
-    settings['init_p'] = "{:07.2f}".format(pressure)
+    set_setting('init_p', round(pressure, 2))
     print(settings)
     save_settings()
-    
-        
+
+
 async def light():
     """
     Output a rainbow pattern on the itsybitsy dotstar
@@ -134,15 +229,15 @@ async def light():
     pulse_counter = 0
     pulse_direction = 0
     while True:
-        if settings["light"] == "rainbow":
+        if get_setting('light') == "rainbow":
             rainbow_counter += 1
             if rainbow_counter > 255:
                 rainbow_counter = 0
-            
+
             rled.duty_cycle = 0
             gled.duty_cycle = 0
             pxl[0] = colorwheel(rainbow_counter)
-        elif settings["light"] == "pulse":
+        elif get_setting('light') == "pulse":
             pulse_counter += 1 if pulse_direction == 0 else -1
             if pulse_counter > 98:
                 pulse_direction = 1
@@ -151,7 +246,7 @@ async def light():
             gled.duty_cycle = led_pulse[pulse_counter]
             rled.duty_cycle = 0
             pxl[0] = (0,255,0, led_pulse[pulse_counter]/65535)
-        elif settings["light"] == "navigation":
+        elif get_setting('light') == "navigation":
             pulse_counter += 1 if pulse_direction == 0 else -1
             if pulse_counter > 98:
                 pulse_direction = 1
@@ -160,7 +255,7 @@ async def light():
             gled.duty_cycle = led_pulse[pulse_counter]
             rled.duty_cycle = led_pulse[pulse_counter]
             pxl[0] = (0, 0, 0)
-        elif settings["light"] == "xmas":
+        elif get_setting('light') == "xmas":
             pulse_counter += 1 if pulse_direction == 0 else -1
             if pulse_counter > 80:
                 pulse_direction = 1
@@ -169,7 +264,7 @@ async def light():
             gled.duty_cycle = led_pulse[-pulse_counter]
             rled.duty_cycle = led_pulse[pulse_counter]
             pxl[0] = (0, 0, 0)
-        elif settings["light"] == "full":
+        elif get_setting('light') == "full":
             gled.duty_cycle = 65535
             rled.duty_cycle = 65535
             pxl[0] = (255, 255, 255)
@@ -177,7 +272,7 @@ async def light():
             gled.duty_cycle = 0
             rled.duty_cycle = 0
             pxl[0] = (0, 0, 0)
-            
+
         await asyncio.sleep(0.01)
 
 async def charger():
@@ -188,16 +283,16 @@ async def charger():
         if cv > 2:
             if charge_state != "fully charged":
                 charge_state = "fully charged"
-                settings["light"] = "pulse"
+                set_setting('light', 'pulse')
         elif cv > 1.3:
             if charge_state != "not charging":
                 charge_state = "not charging"
-                settings["light"] = "0"
+                set_setting('light', 'off')
         else:
             if charge_state != "charging":
                 charge_state = "charging"
-                settings["light"] = "rainbow"
-            
+                set_setting('light', "rainbow")
+
 
 async def sample():
     global tstamp, do, temperature, pressure, sample_count, sampling
@@ -206,11 +301,11 @@ async def sample():
     while True:
         await asyncio.sleep(0)
         #reached max sample count
-        if sample_count >= int(settings.get("max_sample")):
+        if sample_count >= get_setting("max_sample"):
             sampling = 0
         else:
             try:
-                sampling_freq = float(settings.get("sample_hz"))
+                sampling_freq = get_setting("sample_hz")
             except:
                 sampling_freq = 0
 
@@ -229,27 +324,66 @@ async def sample():
                     pressure.append(sensor_data[2])
                     sample_count += 1
 
+async def power_manager():
+    """
+    Decides when to enter low power mode.
+    """
+    global underwater
+    had_connection = 0
+    awake_time = time.monotonic()
+    wait_to_sleep = get_setting('pidle')
+    trigger = False
+    while True:
+        await asyncio.sleep(1)
+        #change wait time if ble connection has been established
+        if had_connection:
+            if wait_to_sleep != (get_setting('pdelay') + get_setting('pidle')):
+                wait_to_sleep = get_setting('pdelay') + get_setting('pidle')
+        elif ble.connected:
+            had_connection = 1
+            wait_to_sleep = get_setting('pdelay') + get_setting('pidle')
+        else:
+            wait_to_sleep = get_setting('pidle')
+
+        #check to sleep
+        if get_setting('pmode') == "low":
+            trigger = not ble.connected
+            trigger &= True if sampling == 0 else False
+            trigger &= True if get_setting('stream') == 0 else False
+            trigger &= True if underwater == 0 else False
+            trigger &= True if charge_state == "not charging" else False
+            #trigger &= True if (get_voltage(battery_voltage, 2) < 4) else False
+            if trigger:
+                if (time.monotonic() - awake_time) > wait_to_sleep:
+                    print("alarm triggered: ", get_setting('psleep'))
+                    time_alarm = alarm.time.TimeAlarm(monotonic_time=time.monotonic() + get_setting('psleep'))
+                    alarm.exit_and_deep_sleep_until_alarms(time_alarm)
+
+            else:
+                awake_time = time.monotonic()
+
 async def auto_sensing():
-    global sample_count, sampling
+    global sample_count, sampling, underwater
     while True:
         await asyncio.sleep(1)
         #only start if auto sampling enabled and empty buffer
-        if settings['sample_type'] == "auto":
+        if get_setting('sample_type') == "auto":
             p = lps.pressure
             #check if undewater
-            pdiff = p - float(settings["init_p"])
-            threshold = float(settings["threshold"])
-            if (pdiff > threshold) and (sample_count == 0):
-                sampling = 1
-            elif pdiff < threshold * 0.8:
+            pdiff = p - get_setting("init_p")
+            threshold = get_setting("threshold")
+            if (pdiff > threshold):
+                underwater = 1
+                if (sample_count == 0):
+                    sampling = 1
+            elif pdiff < (threshold * 0.8):
                 sampling = 0
+                underwater = 0
 
         #checks if pressure was accidentally calibrated underwater
-        if lps.pressure < (float(settings["init_p"])  - float(settings["threshold"])):
+        if lps.pressure < (get_setting("init_p")  - get_setting("threshold")):
             print("pressure is too low ... recalibrating")
             calibrate_p()
-
-
 
 async def ble_uart():
     """
@@ -257,44 +391,64 @@ async def ble_uart():
     Logic for handling UART commands are here.
     """
     last_stream = time.monotonic()
-    global tstamp, do, temperature, pressure, sample_count, sampling
+    global tstamp, do, temperature, pressure, sample_count, sampling, ble_advertising
     while True:
         await asyncio.sleep(0)
-        ble.start_advertising(advertisement)
-        while not ble.connected:
-            await asyncio.sleep(0)
-        while ble.connected:
-            await asyncio.sleep(0)
-
+        if not ble.connected:
+            if ble_advertising == 0:
+                ble_advertising = 1
+                try:
+                    ble.start_advertising(advertisement)
+                except:
+                    print("failed ble advertising")
+        elif ble.connected:
+            ble_advertising = 0
             #handle sensor streaming
             try:
-                stream_fs = int(settings.get("stream"))
+                stream_fs = get_setting('stream')
+                if stream_fs > 5:
+                    stream_fs = 5
             except:
                 stream_fs = 0
+
             if stream_fs > 0:
                 stream_s = 1 / stream_fs
                 if time.monotonic() - last_stream > stream_s:
                     last_stream = time.monotonic()
                     sensor_data = sample_sensors()
-                    msg = f"d,{sensor_data[0]},t,{sensor_data[1]},p,{sensor_data[2]}\n"
-                    uart.write(msg.encode())
-
+                    do = 100 * sensor_data[0]
+                    if get_setting('do_unit') == "mgl":
+                        try:
+                            do = round(convert_to_mgl(do, sensor_data[1], get_setting('init_p')),2)
+                        except:
+                            do = 0
+                    ftemp = round(9 / 5 * sensor_data[1] + 32,1)
+                    depth = round(10.197 / 25.4 * (sensor_data[2] - get_setting('init_p')), 1)
+                    msg = f"d,{do},f,{ftemp},i,{depth}\n"
+                    safe_ble_write(msg)
             # Look for new messages
             message = ""
-            if uart.in_waiting > 0:
-                message = uart.readline()
+            try:
+                if uart.in_waiting > 0:
+                    message = uart.readline()
+                    full_message = message.decode()
+                    message = full_message.split()
+            except:
+                print("failed to read message")
             if message:
-                full_message = message.decode()
-                message = full_message.split()
+                #print all settings
+                if message[0] == "help":
+                    for i in settings:
+                        safe_ble_write(i)
                 #changing settings
                 if message[0] == "set":
                     if len(message) == 3:
-                        settings[message[1]] = message[2]
+                        set_setting(message[1], message[2])
                         print(settings)
                 #reading settings
                 elif message[0] == "get":
                     if len(message) == 2:
-                        uart.write(str(settings.get(message[1])).encode())
+                        safe_ble_write(get_setting(message[1]))
                 #calibrate sensors
                 elif message[0] == "calibrate":
                     if len(message) == 2:
@@ -309,11 +463,12 @@ async def ble_uart():
                 elif message[0] == "sample":
                     if len(message) == 2:
                         if message[1] == "print":
-                            uart.write((f"dstart,{sample_count}\n").encode())
+                            safe_ble_write(f"dstart,{sample_count}\n")
                             for i in range(sample_count):
-                                msg = f"ts,{tstamp[i]},d,{do[i]},t,{temperature[i]},p,{pressure[i]}\n"
-                                uart.write(msg.encode())
-                            uart.write(("dfinish\n").encode())
+                                 msg = f"ts,{tstamp[i]},d,{do[i]},t,{temperature[i]},p,{pressure[i]}\n"
+                                 safe_ble_write(msg)
+                            safe_ble_write("dfinish\n")
+
                         elif (message[1] == "reset")  or (message[1] == "start"):
                             sample_count = 0
                             sampling = 0 if message[1] == "reset" else 1
@@ -324,12 +479,12 @@ async def ble_uart():
                         elif message[1] == "stop":
                             sampling = 0
                         elif message[1] == "size":
-                            uart.write(f"dsize,{sample_count}\n".encode())
+                            safe_ble_write(f"dsize,{sample_count}\n".encode())
                 #poll and print sensor data once
                 elif message[0] == "single":
                     sensor_data = sample_sensors()
                     msg = f"d,{sensor_data[0]},t,{sensor_data[1]},p,{sensor_data[2]}\n"
-                    uart.write(msg.encode())
+                    safe_ble_write(msg)
                 #print battery and charging status
                 elif message[0] == "batt":
                     #1.09V = charging
@@ -338,24 +493,18 @@ async def ble_uart():
                     bv = get_voltage(battery_voltage, 2)
                     cv = get_voltage(charger_status)
                     msg = f"v,{round(bv,2)},s,{charge_state}\n"
-                    uart.write(msg.encode())
+                    safe_ble_write(msg)
                 #print DO voltage
                 elif message[0] == "do":
                     v = get_voltage(do_voltage)
                     msg = f"dov,{v}\n"
-                    uart.write(msg.encode())
+                    safe_ble_write(msg)
                 #reset microcontroller
                 elif message[0] == "reset":
                     microcontroller.reset()
 
-
 ### Initial I/O
 ## startup lighting
-for _ in range(5):
-    gled.duty_cycle = 2**15
-    time.sleep(0.05)
-    gled.duty_cycle = 0
-    time.sleep(0.05)
 # initial pressure calibration
 calibrate_p()
 
@@ -365,10 +514,13 @@ async def main():
     sample_task = asyncio.create_task(sample())
     charger_task = asyncio.create_task(charger())
     autoSensing_task = asyncio.create_task(auto_sensing())
+    power_task = asyncio.create_task(power_manager())
 
     await uart_task
     await sample_task
     await light_task
     await charger_task
     await autoSensing_task
+    await power_task
+
 asyncio.run(main())
