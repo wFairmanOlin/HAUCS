@@ -15,7 +15,7 @@ import supervisor
 import alarm
 
 
-CODE_VERSION = "2.25"
+CODE_VERSION = "2.26"
 print(gc.mem_free())
 supervisor.set_next_code_file(None, reload_on_error=True)
 
@@ -89,6 +89,21 @@ def get_setting(name):
         return int(var)
     else:
         return var
+    
+def set_setting(name, value):
+    global settings, nvm_types
+    var_type = nvm_types.get(name)
+    if not var_type:
+        print("setting doesn't exist")
+    else:
+        try:
+            if var_type == "float":
+                float(value)
+            elif var_type == 'int':
+                int(value)
+            settings[name] = str(value)
+        except:
+            print("value type different from setting type")
 
 ### settings dictionary
 settings = {}
@@ -130,32 +145,6 @@ def safe_ble_write(msg):
         uart.write(str(msg).encode())
     except:
         print("failed to write " + str(msg))
-
-def get_setting(name):
-    global settings, nvm_types
-    var = settings.get(name)
-    var_type = nvm_types.get(name)
-    if var_type == "float":
-        return float(var)
-    elif var_type == "int":
-        return int(var)
-    else:
-        return var
-
-def set_setting(name, value):
-    global settings, nvm_types
-    var_type = nvm_types.get(name)
-    if not var_type:
-        print("setting doesn't exist")
-    else:
-        try:
-            if var_type == "float":
-                float(value)
-            elif var_type == 'int':
-                int(value)
-            settings[name] = str(value)
-        except:
-            print("value type different from setting type")
 
 def save_settings():
     global nvm_keys
@@ -448,7 +437,8 @@ async def ble_uart():
                 #reading settings
                 elif message[0] == "get":
                     if len(message) == 2:
-                        safe_ble_write(get_setting(message[1]))
+                        msg = f"{message[1]} {get_setting(message[1])}"
+                        safe_ble_write(msg)
                 #calibrate sensors
                 elif message[0] == "calibrate":
                     if len(message) == 2:
