@@ -19,45 +19,62 @@ do_i2c:set_retries(10)
 local lps_i2c = i2c.get_device(I2C_BUS, LPS_ADDR)
 lps_i2c:set_retries(10)
 
-
-local function send_DO_data(RETRIES)
-    local bytes = {}
-    local do_val = -1
-
-    -- get size of DO register
-    local size = do_i2c:read_registers(0)
-    if not size then 
-        gcs:send_text(MAV_SEVERITY_INFO, 'no response from DO device')
-        return nil 
-    end
+local function send_DO_data()
+    local bytes = {0,0}
+    local do_val = 0
 
     -- retrieve and store register data
-    for idx = 1, size do
-        bytes[idx - 1] = do_i2c:read_registers(idx)
-    end
-    
-    if bytes then
-        do_val = 0
-        for x = 0, #bytes do
-            do_val = do_val | bytes[x] << (x * 8)
-        end
-    end
+    bytes[0] = do_i2c:read_registers(1)
+    bytes[1] = do_i2c:read_registers(2)
+
+    do_val = bytes[0] | (bytes[1] << 8)
 
     -- scale do value to voltage
     do_val = do_val * 3300 / 1024 / 11
 
-    if do_val == 0 then
-        RETRIES = RETRIES - 1
-        if RETRIES <= 0 then
-            gcs:send_named_float('p_DO', do_val)
-        else
-            send_DO_data(RETRIES)
-        end
-    else
-        gcs:send_named_float('p_DO', do_val)
-    end
+    gcs:send_named_float('p_DO', do_val)
 
 end
+
+
+-- local function send_DO_data(RETRIES)
+--     local bytes = {}
+--     local do_val = 65535
+
+--     -- get size of DO register
+--     local size = do_i2c:read_registers(0)
+--     if not size then 
+--         gcs:send_text(MAV_SEVERITY_INFO, 'no response from DO device')
+--         return nil 
+--     end
+
+--     -- retrieve and store register data
+--     for idx = 1, size do
+--         bytes[idx - 1] = do_i2c:read_registers(idx)
+--     end
+    
+--     if bytes then
+--         do_val = 0
+--         for x = 0, #bytes do
+--             do_val = do_val | bytes[x] << (x * 8)
+--         end
+--     end
+
+--     -- scale do value to voltage
+--     do_val = do_val * 3300 / 1024 / 11
+
+--     if do_val == 0 then
+--         RETRIES = RETRIES - 1
+--         if RETRIES <= 0 then
+--             gcs:send_named_float('p_DO', do_val)
+--         else
+--             send_DO_data(RETRIES)
+--         end
+--     else
+--         gcs:send_named_float('p_DO', do_val)
+--     end
+
+-- end
 
 local function read_LPS_WHOAMI()
 
@@ -113,7 +130,7 @@ function update()
 
     send_LPS_data()
 
-    send_DO_data(10)
+    send_DO_data()
 
     return update, RUN_INTERVAL_MS
 end
