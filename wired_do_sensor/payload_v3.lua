@@ -13,10 +13,10 @@ local LPS_PRES_OUT_XL   = 0x28
 local LPS_TEMP_OUT_L    = 0x2B
 
 local do_i2c = i2c.get_device(I2C_BUS, DO_ADDR, 100000)
-do_i2c:set_retries(10)
+do_i2c:set_retries(1)
 
 local lps_i2c = i2c.get_device(I2C_BUS, LPS_ADDR, 100000)
-lps_i2c:set_retries(10)
+lps_i2c:set_retries(2)
 
 local function send_DO_data()
     local bytes = {0,0}
@@ -25,9 +25,9 @@ local function send_DO_data()
     -- retrieve and store register data
     -- bytes[0] = do_i2c:read_registers(0x00)
     -- bytes[1] = do_i2c:read_registers(0x01)
-    bytes = do_i2c:read_Registers(0x02, 2)
+    bytes = do_i2c:read_registers(0x02, 2)
 
-    if bytes then
+    if bytes and (bytes != nil) then
 
         do_val = bytes[0] | (bytes[1] << 8)
 
