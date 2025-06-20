@@ -2,16 +2,15 @@
 -- Cube and Matek autopilots typically make I2C bus 0 available
 -- some Pixhawk (and other) autopilots only expose I2C bus 1
 -- set the I2C_BUS variable as appropriate for your board
-local I2C_BUS           =    0
-local RUN_INTERVAL_MS   =  1000
-local DO_ADDR        = 0x09
-local MAV_SEVERITY_INFO =    6
-local LPS_ADDR = 0x5D
-local LPS_WHOAMI = 0x0F
-local LPS_CTRL_REG2 = 0x11
-local LPS_PRES_OUT_XL = 0x28
-local LPS_TEMP_OUT_L = 0x2B
-
+local I2C_BUS           = 0
+local RUN_INTERVAL_MS   = 1000
+local DO_ADDR           = 0x44
+local MAV_SEVERITY_INFO = 6
+local LPS_ADDR          = 0x5D
+local LPS_WHOAMI        = 0x0F
+local LPS_CTRL_REG2     = 0x11
+local LPS_PRES_OUT_XL   = 0x28
+local LPS_TEMP_OUT_L    = 0x2B
 
 local do_i2c = i2c.get_device(I2C_BUS, DO_ADDR, 100000)
 do_i2c:set_retries(10)
@@ -24,10 +23,10 @@ local function send_DO_data()
     local do_val = 0
 
     -- retrieve and store register data
-    -- bytes[0] = do_i2c:read_registers(1)
-    -- bytes[1] = do_i2c:read_registers(2)
+    -- bytes[0] = do_i2c:read_registers(0x00)
+    -- bytes[1] = do_i2c:read_registers(0x01)
+    bytes = do_i2c:read_Registers(0x02, 2)
 
-    bytes = do_i2c:read_Registers(0x01, 2)
     if bytes then
 
         do_val = bytes[0] | (bytes[1] << 8)
@@ -132,9 +131,9 @@ end
 
 function update()
 
-    send_LPS_data()
-
     send_DO_data()
+
+    send_LPS_data()
 
     return update, RUN_INTERVAL_MS
 end
