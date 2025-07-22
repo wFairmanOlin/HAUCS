@@ -14,8 +14,8 @@ import pwmio
 import supervisor
 import alarm
 
-
-CODE_VERSION = "2.26"
+#set to YY.MM.DD
+CODE_VERSION = "25.07.22"
 print(gc.mem_free())
 supervisor.set_next_code_file(None, reload_on_error=True)
 
@@ -142,7 +142,7 @@ ble_advertising = 0
 
 def safe_ble_write(msg):
     try:
-        uart.write(str(msg).encode())
+        uart.write((str(msg) + "\n").encode())
     except:
         print("failed to write " + str(msg))
 
@@ -196,7 +196,7 @@ def calibrate_do():
     for i in range(n):
         do += do_voltage.value
     set_setting('init_do', int(do / n))
-    print(settings)
+    safe_ble_write(f"init do, {get_setting('init_do')}")
     save_settings()
 
 def calibrate_p():
@@ -206,7 +206,7 @@ def calibrate_p():
         pressure += lps.pressure
     pressure /= n
     set_setting('init_p', round(pressure, 2))
-    print(settings)
+    safe_ble_write(f"init p, {get_setting('init_p')}")
     save_settings()
 
 
@@ -413,7 +413,7 @@ async def ble_uart():
                             do = 0
                     ftemp = round(9 / 5 * sensor_data[1] + 32,1)
                     depth = round(10.197 / 25.4 * (sensor_data[2] - get_setting('init_p')), 1)
-                    msg = f"d,{do},f,{ftemp},i,{depth}\n"
+                    msg = f"d,{do},f,{ftemp},i,{depth}"
                     safe_ble_write(msg)
             # Look for new messages
             message = ""
@@ -433,11 +433,12 @@ async def ble_uart():
                 if message[0] == "set":
                     if len(message) == 3:
                         set_setting(message[1], message[2])
-                        print(settings)
+                        msg = f"{message[1]},{get_setting(message[1])}"
+                        safe_ble_write(msg)
                 #reading settings
                 elif message[0] == "get":
                     if len(message) == 2:
-                        msg = f"{message[1]} {get_setting(message[1])}"
+                        msg = f"{message[1]},{get_setting(message[1])}"
                         safe_ble_write(msg)
                 #calibrate sensors
                 elif message[0] == "calibrate":
@@ -446,6 +447,13 @@ async def ble_uart():
                             calibrate_do()
                         elif message[1] == "pressure":
                             calibrate_p()
+                #calibrate sensors
+                elif message[0] == "cal":
+                    if len(message) == 2:
+                        if message[1] == "do":
+                            calibrate_do()
+                        elif message[1] == "ps":
+                            calibrate_p()
                 #store settings
                 elif message[0] == "save":
                     save_settings()
@@ -453,11 +461,11 @@ async def ble_uart():
                 elif message[0] == "sample":
                     if len(message) == 2:
                         if message[1] == "print":
-                            safe_ble_write(f"dstart,{sample_count}\n")
+                            safe_ble_write(f"dstart,{sample_count}")
                             for i in range(sample_count):
-                                 msg = f"ts,{tstamp[i]},d,{do[i]},t,{temperature[i]},p,{pressure[i]}\n"
+                                 msg = f"ts,{tstamp[i]},d,{do[i]},t,{temperature[i]},p,{pressure[i]}"
                                  safe_ble_write(msg)
-                            safe_ble_write("dfinish\n")
+                            safe_ble_write("dfinish")
 
                         elif (message[1] == "reset")  or (message[1] == "start"):
                             sample_count = 0
@@ -469,11 +477,11 @@ async def ble_uart():
                         elif message[1] == "stop":
                             sampling = 0
                         elif message[1] == "size":
-                            safe_ble_write(f"dsize,{sample_count}\n".encode())
+                            safe_ble_write(f"dsize,{sample_count}".encode())
                 #poll and print sensor data once
                 elif message[0] == "single":
                     sensor_data = sample_sensors()
-                    msg = f"d,{sensor_data[0]},t,{sensor_data[1]},p,{sensor_data[2]}\n"
+                    msg = f"d,{sensor_data[0]},t,{sensor_data[1]},p,{sensor_data[2]}"
                     safe_ble_write(msg)
                 #print battery and charging status
                 elif message[0] == "batt":
@@ -482,12 +490,12 @@ async def ble_uart():
                     #2.79V = fully charged
                     bv = get_voltage(battery_voltage, 2)
                     cv = get_voltage(charger_status)
-                    msg = f"v,{round(bv,2)},s,{charge_state}\n"
+                    msg = f"v,{round(bv,2)},s,{charge_state}"
                     safe_ble_write(msg)
                 #print DO voltage
                 elif message[0] == "do":
                     v = get_voltage(do_voltage)
-                    msg = f"dov,{v}\n"
+                    msg = f"dov,{v}"
                     safe_ble_write(msg)
                 #reset microcontroller
                 elif message[0] == "reset":
