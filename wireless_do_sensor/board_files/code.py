@@ -15,7 +15,7 @@ import supervisor
 import alarm
 
 #set to YY.MM.DD
-CODE_VERSION = "25.07.22"
+CODE_VERSION = "25.07.23"
 print(gc.mem_free())
 supervisor.set_next_code_file(None, reload_on_error=True)
 
@@ -150,12 +150,18 @@ def save_settings():
     global nvm_keys
     nvm_data = ""
     for key in nvm_keys:
-        nvm_data += settings[key] + ','
+        # always store light value as off 
+        if key == "light":
+            nvm_data += "off,"
+        else:
+            nvm_data += settings[key] + ','
+
     nvm_data += (nvm_size - len(nvm_data)) * "0"
     if len(nvm_data) > nvm_size:
         print("cannot save, nvm_data larger than available size")
     else:
         microcontroller.nvm[0:nvm_size] = nvm_data.encode()
+        safe_ble_write("saved")
 
 def get_voltage(pin, mult=1):
     return pin.value * 3.3 / 65536 * mult
@@ -420,7 +426,7 @@ async def ble_uart():
             try:
                 if uart.in_waiting > 0:
                     message = uart.readline()
-                    full_message = message.decode()
+                    full_message = message.decode().lower()
                     message = full_message.split()
             except:
                 print("failed to read message")
@@ -477,7 +483,7 @@ async def ble_uart():
                         elif message[1] == "stop":
                             sampling = 0
                         elif message[1] == "size":
-                            safe_ble_write(f"dsize,{sample_count}".encode())
+                            safe_ble_write(f"dsize,{sample_count}")
                 #poll and print sensor data once
                 elif message[0] == "single":
                     sensor_data = sample_sensors()
