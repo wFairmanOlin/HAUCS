@@ -18,8 +18,9 @@ def show_messages(m):
         msg = m.recv_match(blocking=True)
         if not msg:
             return
-        if msg.get_type() == "BAD_DATA":
+        elif msg.get_type() == "BAD_DATA":
             pass
+        elif msg.get_Type() == ""
         else:
             print(msg)
 
@@ -39,7 +40,12 @@ wait_heartbeat(master)
 
 print("starting")
 last_time = time.time()
+
+test_data = [i for i in range(96)]
 while True:
     if (time.time() - last_time) > 1:
         last_time = time.time()
-        master.mav.winch_status_send(1,2,3,4,5,6,7)
+        master.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_WINCH, mavutil.mavlink.MAV_AUTOPILOT_INVALID, mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, 0, mavutil.mavlink.MAV_STATE_ACTIVE)
+        master.mav.winch_status_send(0,1,2,3,4,5,6,7)
+        master.mav.data96_send(mavutil.mavlink.MAV_TYPE_WINCH, 3, test_data)
+
